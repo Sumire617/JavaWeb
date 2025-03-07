@@ -5,10 +5,5 @@
 #app {
     display: flex;
 }
-.left-bar {
-    flex: 1;
-}
-.content {
-    flex: 9
-}
+
 

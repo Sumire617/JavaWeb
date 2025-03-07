@@ -1,7 +1,6 @@
 package org.sumire.studyhardprogram.model;
 
 import jakarta.persistence.*;
-import org.sumire.studyhardprogram.Enum.UserType;
 
 import java.time.Instant;
 
@@ -19,7 +18,7 @@ public class User {
     @Column(name = "password")
     private String password;
 
-    @Column(name = "email")
+    @Column(name = "email", unique = true)
     private String email;
 
     @Column(name = "phone_number", length = 20)
@@ -33,6 +32,18 @@ public class User {
 
     @Column(name = "user_type", nullable = false, length = 5)
     private String userType;
+
+    @Lob
+    @Column(name = "user_status")
+    private String userStatus;
+
+    public String getUserStatus() {
+        return userStatus;
+    }
+
+    public void setUserStatus(String userStatus) {
+        this.userStatus = userStatus;
+    }
 
     public String getUserId() {
         return userId;

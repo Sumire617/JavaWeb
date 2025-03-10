@@ -5,5 +5,17 @@
 #app {
     display: flex;
 }
-
-
+.left-bar {
+    width: 8vw;
+    position: fixed;
+    box-sizing: border-box;
+}
+.content {
+    width: 92vw;
+    margin-left: 7vw;
+    box-sizing: border-box;
+}
+/* 隐藏所有子菜单右侧箭头 */
+.el-sub-menu__icon-arrow {
+    display: none !important;
+}

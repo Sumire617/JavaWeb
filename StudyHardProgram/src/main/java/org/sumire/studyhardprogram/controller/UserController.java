@@ -62,6 +62,7 @@ public class UserController {
             return ResponseEntity.notFound().build(); // 如果用户不存在，返回404状态码
         }
     }
+    // 注册用户
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
         try {

@@ -21,6 +21,7 @@ import router from "@/router/index.js";
 const username = ref('');
 const password = ref('');
 const errorMessage = ref('');
+// 登录
 const login = async () => {
 	// 检查用户名和密码是否为空
 	if (!username.value || !password.value) {
@@ -36,9 +37,22 @@ const login = async () => {
 				'Content-Type': 'application/json'
 			}
 		});
-		const userType = response.data.userType;
+		const user = response.data;
+		// 保存用户信息到localStorage
+		localStorage.setItem('user', JSON.stringify(user));
 		errorMessage.value = '';
-		await router.push('/dashboard')
+		// 管理员跳转管理面板
+		// 普通用户跳转主页
+		// 用人单位跳转招聘管理面板
+		if(user.userType === 'ADMIN'){
+			await router.push('/dashboard')
+		}
+		else if(user.userType === 'EMPLOYER'){
+			await router.push('/recruiting-interface')
+		}
+		else {
+			await router.push('/Home')
+		}
 	} catch (error) {
 		console.error(error);
 	}

@@ -116,16 +116,24 @@ public class JobPostServiceImpl implements JobPostService {
     @Override
     public JobPost updateJob(String jobId, JobPost jobPost) {
         JobPost existingJob = getJobById(jobId);
+        existingJob.setEmployerId(jobPost.getEmployerId());
         existingJob.setJobTitle(jobPost.getJobTitle());
         existingJob.setJobDescription(jobPost.getJobDescription());
         existingJob.setRequirements(jobPost.getRequirements());
         existingJob.setSalaryRange(jobPost.getSalaryRange());
         existingJob.setLocation(jobPost.getLocation());
+        existingJob.setStatus(jobPost.getStatus());
+        existingJob.setUpdatedAt(java.time.Instant.now());
         return jobPostRepository.save(existingJob);
     }
 
     @Override
     public void deleteJob(String jobId) {
         jobPostRepository.deleteById(jobId);
+    }
+
+    @Override
+    public Page<JobPost> findPendingJobs(Pageable pageable) {
+        return jobPostRepository.findByStatus("PENDING", pageable);
     }
 } 

@@ -34,4 +34,11 @@ public interface JobPostService {
     JobPost updateJob(String jobId, JobPost jobPost);
     
     void deleteJob(String jobId);
+    
+    /**
+     * 获取待审核的岗位列表
+     * @param pageable 分页参数
+     * @return 待审核岗位分页列表
+     */
+    Page<JobPost> findPendingJobs(Pageable pageable);
 }

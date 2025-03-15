@@ -50,4 +50,44 @@ public class JobPostController {
         Map<String, Object> stats = jobPostService.getJobStats();
         return ResponseEntity.ok(stats);
     }
+    
+    @GetMapping("/{jobId}")
+    public ResponseEntity<JobPost> getJobById(@PathVariable String jobId) {
+        JobPost job = jobPostService.getJobById(jobId);
+        return ResponseEntity.ok(job);
+    }
+    
+    @PostMapping
+    public ResponseEntity<JobPost> createJob(@RequestBody JobPost jobPost) {
+        JobPost createdJob = jobPostService.createJob(jobPost);
+        return ResponseEntity.ok(createdJob);
+    }
+    
+    @PutMapping("/{jobId}")
+    public ResponseEntity<JobPost> updateJob(@PathVariable String jobId, @RequestBody JobPost jobPost) {
+        JobPost updatedJob = jobPostService.updateJob(jobId, jobPost);
+        return ResponseEntity.ok(updatedJob);
+    }
+    
+    @DeleteMapping("/{jobId}")
+    public ResponseEntity<Void> deleteJob(@PathVariable String jobId) {
+        jobPostService.deleteJob(jobId);
+        return ResponseEntity.ok().build();
+    }
+    
+    /**
+     * 获取待审核的岗位列表
+     * @param page 页码，从0开始
+     * @param size 每页大小
+     * @return 待审核岗位分页列表
+     */
+    @GetMapping("/pending")
+    public ResponseEntity<Page<JobPost>> getPendingJobs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("postedAt").descending());
+        Page<JobPost> pendingJobs = jobPostService.findPendingJobs(pageRequest);
+        return ResponseEntity.ok(pendingJobs);
+    }
 }

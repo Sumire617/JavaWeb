@@ -59,7 +59,7 @@ const openAuditDrawer = async (job) => {
 // 获取审核历史
 const fetchAuditHistory = async (jobPostId) => {
   try {
-    const response = await axios.get(`http://localhost:8080/api/job-audits/${jobPostId}`);
+    const response = await axios.get(`/api/job-audits/${jobPostId}`);
     auditHistory.value = response.data;
   } catch (error) {
     ElMessage.error('加载审核历史失败：' + error.message);
@@ -69,7 +69,7 @@ const fetchAuditHistory = async (jobPostId) => {
 // 获取岗位评价
 const fetchJobEvaluations = async (jobPostId) => {
   try {
-    const response = await axios.get(`http://localhost:8080/api/job-evaluations/${jobPostId}`);
+    const response = await axios.get(`/api/job-evaluations/${jobPostId}`);
     evaluations.value = response.data;
   } catch (error) {
     ElMessage.error('加载岗位评价失败：' + error.message);
@@ -88,11 +88,11 @@ const submitAudit = async () => {
       auditTime: new Date().toISOString()
     };
 
-    await axios.post('http://localhost:8080/api/job-audits', auditData);
+    await axios.post('/api/job-audits', auditData);
     
     // 更新岗位状态
     const jobStatus = auditForm.value.isApproved === 1 ? 'APPROVED' : 'REJECTED';
-    await axios.patch(`http://localhost:8080/api/job-posts/editId=${currentJob.value.jobPostId}`, {
+    await axios.put(`/api/jobs/${currentJob.value.jobPostId}`, {
       ...currentJob.value,
       status: jobStatus
     });

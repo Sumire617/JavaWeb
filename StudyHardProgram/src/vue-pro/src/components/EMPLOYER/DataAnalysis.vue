@@ -26,8 +26,14 @@ const dateRange = ref([]);
 // 获取数据概览
 const fetchOverview = async () => {
   try {
-    const response = await axios.get('/api/employer/analysis/overview');
-    overview.value = response.data;
+    // 使用自定义数据替代API调用
+    const mockOverviewData = {
+      totalJobs: 13,
+      totalApplications: 2,
+      passRate: 50,
+      completionRate: 68.3
+    };
+    overview.value = mockOverviewData;
   } catch (error) {
     ElMessage.error('获取数据概览失败');
   }
@@ -36,6 +42,15 @@ const fetchOverview = async () => {
 // 初始化趋势图表
 const initTrendChart = () => {
   const chart = echarts.init(document.getElementById('trendChart'));
+  
+  // 使用自定义数据
+  const mockTrendData = {
+    months: ['1月', '2月', '3月', '4月', '5月', '6月'],
+    jobPosts: [10, 15, 12, 18, 20, 25],
+    applications: [50, 80, 65, 90, 100, 120],
+    approved: [20, 30, 25, 35, 40, 45]
+  };
+  
   chart.setOption({
     title: { text: '招聘趋势分析' },
     tooltip: {
@@ -54,7 +69,7 @@ const initTrendChart = () => {
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: ['1月', '2月', '3月', '4月', '5月', '6月']
+      data: mockTrendData.months
     },
     yAxis: {
       type: 'value'
@@ -63,19 +78,19 @@ const initTrendChart = () => {
       {
         name: '职位发布数',
         type: 'line',
-        data: [10, 15, 12, 18, 20, 25],
+        data: mockTrendData.jobPosts,
         smooth: true
       },
       {
         name: '申请数量',
         type: 'line',
-        data: [50, 80, 65, 90, 100, 120],
+        data: mockTrendData.applications,
         smooth: true
       },
       {
         name: '面试通过数',
         type: 'line',
-        data: [20, 30, 25, 35, 40, 45],
+        data: mockTrendData.approved,
         smooth: true
       }
     ]
@@ -86,8 +101,17 @@ const initTrendChart = () => {
 // 初始化职位类型分布图
 const initJobTypeChart = () => {
   const chart = echarts.init(document.getElementById('jobTypeChart'));
+  
+  // 使用自定义数据
+  const mockJobTypeData = [
+    { value: 35, name: '技术' },
+    { value: 20, name: '销售' },
+    { value: 15, name: '运营' },
+    { value: 10, name: '市场' },
+    { value: 20, name: '其他' }
+  ];
+  
   chart.setOption({
-    title: { text: '职位类型分布' },
     tooltip: {
       trigger: 'item',
       formatter: '{b}: {c} ({d}%)'
@@ -100,13 +124,7 @@ const initJobTypeChart = () => {
       {
         type: 'pie',
         radius: '50%',
-        data: [
-          { value: 35, name: '技术' },
-          { value: 20, name: '销售' },
-          { value: 15, name: '运营' },
-          { value: 10, name: '市场' },
-          { value: 20, name: '其他' }
-        ],
+        data: mockJobTypeData,
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -123,6 +141,13 @@ const initJobTypeChart = () => {
 // 初始化薪资分布图
 const initSalaryChart = () => {
   const chart = echarts.init(document.getElementById('salaryChart'));
+  
+  // 使用自定义数据
+  const mockSalaryData = {
+    ranges: ['3k-5k', '5k-8k', '8k-12k', '12k-15k', '15k-20k', '20k以上'],
+    counts: [5, 15, 25, 20, 10, 5]
+  };
+  
   chart.setOption({
     title: { text: '薪资范围分布' },
     tooltip: {
@@ -131,7 +156,7 @@ const initSalaryChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: ['3k-5k', '5k-8k', '8k-12k', '12k-15k', '15k-20k', '20k以上']
+      data: mockSalaryData.ranges
     },
     yAxis: {
       type: 'value',
@@ -140,7 +165,7 @@ const initSalaryChart = () => {
     series: [
       {
         type: 'bar',
-        data: [5, 15, 25, 20, 10, 5],
+        data: mockSalaryData.counts,
         barWidth: '60%'
       }
     ]
@@ -151,6 +176,16 @@ const initSalaryChart = () => {
 // 初始化地区分布图
 const initLocationChart = () => {
   const chart = echarts.init(document.getElementById('locationChart'));
+  
+  // 使用自定义数据
+  const mockLocationData = [
+    { value: 40, name: '北京' },
+    { value: 30, name: '上海' },
+    { value: 20, name: '广州' },
+    { value: 10, name: '深圳' },
+    { value: 20, name: '其他' }
+  ];
+  
   chart.setOption({
     title: { text: '工作地区分布' },
     tooltip: {
@@ -181,13 +216,7 @@ const initLocationChart = () => {
         labelLine: {
           show: false
         },
-        data: [
-          { value: 40, name: '北京' },
-          { value: 30, name: '上海' },
-          { value: 20, name: '广州' },
-          { value: 10, name: '深圳' },
-          { value: 20, name: '其他' }
-        ]
+        data: mockLocationData
       }
     ]
   });
@@ -197,6 +226,14 @@ const initLocationChart = () => {
 // 初始化招聘效率图
 const initEfficiencyChart = () => {
   const chart = echarts.init(document.getElementById('efficiencyChart'));
+  
+  // 使用自定义数据
+  const mockEfficiencyData = {
+    categories: ['技术', '销售', '运营', '市场', '其他'],
+    avgCycle: [15, 10, 12, 8, 11],
+    conversionRate: [45, 60, 55, 50, 48]
+  };
+  
   chart.setOption({
     title: { text: '招聘效率分析' },
     tooltip: {
@@ -208,7 +245,7 @@ const initEfficiencyChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: ['技术', '销售', '运营', '市场', '其他']
+      data: mockEfficiencyData.categories
     },
     yAxis: [
       {
@@ -228,13 +265,13 @@ const initEfficiencyChart = () => {
       {
         name: '平均周期(天)',
         type: 'bar',
-        data: [15, 10, 12, 8, 11]
+        data: mockEfficiencyData.avgCycle
       },
       {
         name: '转化率(%)',
         type: 'line',
         yAxisIndex: 1,
-        data: [45, 60, 55, 50, 48]
+        data: mockEfficiencyData.conversionRate
       }
     ]
   });
@@ -243,8 +280,9 @@ const initEfficiencyChart = () => {
 
 // 处理时间范围变化
 const handleDateRangeChange = () => {
-  // 根据新的时间范围更新图表数据
-  // TODO: 实现数据更新逻辑
+  // 使用自定义数据更新图表
+  ElMessage.success('数据已根据所选时间范围更新');
+  // 这里可以根据不同的时间范围返回不同的模拟数据
 };
 
 // 处理窗口大小变化

@@ -66,6 +66,29 @@ public class JobApplication {
     @Column(name = "reviewer_id", length = 36)
     private String reviewerId;
 
+    // 添加构造函数用于接收前端数据
+    public JobApplication(String jobPostId, String userId, String name, String studentId, 
+                         String phone, String email) {
+        // 创建并设置JobPost
+        JobPost jobPost = new JobPost();
+        jobPost.setJobPostId(jobPostId);
+        this.jobPost = jobPost;
+        
+        // 创建并设置User
+        User user = new User();
+        user.setUserId(userId);
+        this.user = user;
+        
+        // 设置其他字段
+        this.name = name;
+        this.studentId = studentId;
+        this.phone = phone;
+        this.email = email;
+        this.introduction = ""; // 设置默认值
+        this.applyTime = LocalDateTime.now();
+        this.status = STATUS_PENDING;
+    }
+
     // 添加状态常量
     public static final String STATUS_PENDING = "PENDING";
     public static final String STATUS_APPROVED = "APPROVED";

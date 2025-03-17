@@ -5,8 +5,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 import org.sumire.studyhardprogram.model.JobApplication;
 
+import java.util.Optional;
+
+@Repository
 public interface JobApplicationRepository extends JpaRepository<JobApplication, String> {
     Page<JobApplication> findByJobPost_JobPostId(String jobPostId, Pageable pageable);
     Page<JobApplication> findByUser_UserId(String userId, Pageable pageable);
@@ -24,4 +28,12 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     Page<JobApplication> findByJobPostIdAndStatus(@Param("jobPostId") String jobPostId, 
                                                 @Param("status") String status, 
                                                 Pageable pageable);
+
+    boolean existsByJobPost_JobPostIdAndUser_UserId(String jobPostId, String userId);
+    
+    Optional<JobApplication> findByJobPost_JobPostIdAndUser_UserId(String jobPostId, String userId);
+    
+    long countByJobPost_JobPostId(String jobPostId);
+    
+    long countByJobPost_JobPostIdAndStatus(String jobPostId, String status);
 } 

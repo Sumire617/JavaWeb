@@ -90,16 +90,6 @@ const routes = [
         props: (route) => ({ isEditing: true, jobId: route.params.jobId })
       },
       {
-        path: 'notifications/publish',
-        name: 'PublishNotification',
-        component: () => import('@/components/EMPLOYER/PublishNotification.vue')
-      },
-      {
-        path: 'notifications/manage',
-        name: 'ManageNotifications',
-        component: () => import('@/components/EMPLOYER/ManageNotifications.vue')
-      },
-      {
         path: 'analysis',
         name: 'DataAnalysis',
         component: () => import('@/components/EMPLOYER/DataAnalysis.vue')

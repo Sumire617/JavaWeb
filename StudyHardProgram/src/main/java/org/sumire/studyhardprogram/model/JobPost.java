@@ -1,9 +1,11 @@
 package org.sumire.studyhardprogram.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
 import java.time.Instant;
 
+@Getter
 @Entity
 @Table(name = "job_posts")
 public class JobPost {
@@ -39,80 +41,40 @@ public class JobPost {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    public String getJobPostId() {
-        return jobPostId;
-    }
-
     public void setJobPostId(String jobPostId) {
         this.jobPostId = jobPostId;
-    }
-
-    public String getEmployerId() {
-        return employerId;
     }
 
     public void setEmployerId(String employerId) {
         this.employerId = employerId;
     }
 
-    public String getJobTitle() {
-        return jobTitle;
-    }
-
     public void setJobTitle(String jobTitle) {
         this.jobTitle = jobTitle;
-    }
-
-    public String getJobDescription() {
-        return jobDescription;
     }
 
     public void setJobDescription(String jobDescription) {
         this.jobDescription = jobDescription;
     }
 
-    public String getRequirements() {
-        return requirements;
-    }
-
     public void setRequirements(String requirements) {
         this.requirements = requirements;
-    }
-
-    public String getSalaryRange() {
-        return salaryRange;
     }
 
     public void setSalaryRange(String salaryRange) {
         this.salaryRange = salaryRange;
     }
 
-    public String getLocation() {
-        return location;
-    }
-
     public void setLocation(String location) {
         this.location = location;
-    }
-
-    public String getStatus() {
-        return status;
     }
 
     public void setStatus(String status) {
         this.status = status;
     }
 
-    public Instant getPostedAt() {
-        return postedAt;
-    }
-
     public void setPostedAt(Instant postedAt) {
         this.postedAt = postedAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
     }
 
     public void setUpdatedAt(Instant updatedAt) {

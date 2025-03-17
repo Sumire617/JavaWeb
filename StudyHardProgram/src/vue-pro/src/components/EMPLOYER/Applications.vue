@@ -304,29 +304,95 @@ const fetchApplications = async () => {
   try {
     loading.value = true;
     
-    let url = '/api/applications';
-    let params = {};
+    // 使用自定义数据替代API调用
+    const mockApplications = [
+      {
+        applicationId: '1',
+        name: '张三',
+        studentId: '2022001',
+        user: { userId: 'u1' },
+        jobPost: { jobPostId: 'job1', jobTitle: '前端开发实习生' },
+        applyTime: new Date().toISOString(),
+        status: 'PENDING',
+        phone: '13800138001',
+        email: 'zhangsan@example.com',
+        introduction: '我是一名大三学生，熟悉前端开发技术，有React和Vue项目经验。希望能够加入贵公司实习，提升自己的能力。'
+      },
+      {
+        applicationId: '2',
+        name: '李四',
+        studentId: '2022002',
+        user: { userId: 'u2' },
+        jobPost: { jobPostId: 'job1', jobTitle: '前端开发实习生' },
+        applyTime: new Date(Date.now() - 86400000).toISOString(), // 昨天
+        status: 'APPROVED',
+        phone: '13900139001',
+        email: 'lisi@example.com',
+        introduction: '大四学生，专注Web开发两年，参与过多个实际项目，精通HTML/CSS/JavaScript，熟悉Vue.js框架。'
+      },
+      {
+        applicationId: '3',
+        name: '王五',
+        studentId: '2022003',
+        user: { userId: 'u3' },
+        jobPost: { jobPostId: 'job2', jobTitle: '后端开发实习生' },
+        applyTime: new Date(Date.now() - 172800000).toISOString(), // 前天
+        status: 'REJECTED',
+        phone: '13700137001',
+        email: 'wangwu@example.com',
+        introduction: '计算机专业大四学生，对Java后端开发有浓厚兴趣，熟悉Spring Boot框架，希望能在实习中提升实战能力。'
+      },
+      {
+        applicationId: '4',
+        name: '赵六',
+        studentId: '2022004',
+        user: { userId: 'u4' },
+        jobPost: { jobPostId: 'job2', jobTitle: '后端开发实习生' },
+        applyTime: new Date(Date.now() - 259200000).toISOString(), // 三天前
+        status: 'PENDING',
+        phone: '13600136001',
+        email: 'zhaoliu@example.com',
+        introduction: '熟悉Java、Python，有Spring Boot项目经验，曾参与校内项目开发，希望能够获得实习机会深入学习后端技术。'
+      },
+      {
+        applicationId: '5',
+        name: '钱七',
+        studentId: '2022005',
+        user: { userId: 'u5' },
+        jobPost: { jobPostId: 'job3', jobTitle: '全栈开发实习生' },
+        applyTime: new Date(Date.now() - 345600000).toISOString(), // 四天前
+        status: 'APPROVED',
+        phone: '13500135001',
+        email: 'qianqi@example.com',
+        introduction: '计算机科学与技术专业大三学生，熟悉前后端开发技术，对全栈开发充满热情，希望能够加入贵公司锻炼自己。'
+      }
+    ];
     
-    // 如果是从特定岗位进入，只加载该岗位的申请
-    if (isSpecificJob.value) {
-      url = `/api/applications/job/${jobId.value}`;
-      // 设置当前选中的岗位过滤器
-      jobFilter.value = jobId.value;
-    } else if (jobFilter.value !== 'all') {
-      // 如果选择了特定岗位
-      url = `/api/applications/job/${jobFilter.value}`;
+    // 根据筛选条件过滤数据
+    let filteredApplications = [...mockApplications];
+    
+    // 根据岗位筛选
+    if (jobFilter.value !== 'all') {
+      filteredApplications = filteredApplications.filter(app => app.jobPost.jobPostId === jobFilter.value);
     }
     
+    // 根据状态筛选
     if (statusFilter.value !== 'all') {
-      params.status = statusFilter.value;
+      filteredApplications = filteredApplications.filter(app => app.status === statusFilter.value);
     }
     
-    const response = await axios.get(url, { params });
-    applications.value = response.data.content || [];
-    totalApplications.value = response.data.totalElements || applications.value.length;
+    // 设置应用数据
+    applications.value = filteredApplications;
     
     // 计算状态统计
-    calculateStats();
+    stats.value = {
+      PENDING: mockApplications.filter(app => app.status === 'PENDING').length,
+      APPROVED: mockApplications.filter(app => app.status === 'APPROVED').length,
+      REJECTED: mockApplications.filter(app => app.status === 'REJECTED').length
+    };
+    
+    // 设置总数
+    pagination.value.total = applications.value.length;
   } catch (error) {
     ElMessage.error('获取申请数据失败');
     console.error('获取申请数据失败:', error);
@@ -338,21 +404,19 @@ const fetchApplications = async () => {
 // 加载岗位数据
 const fetchJobs = async () => {
   try {
-    const response = await axios.get('/api/jobs', {
-      params: {
-        page: 0,
-        size: 100 // 加载足够多的岗位以供筛选
-      }
-    });
-    jobs.value = response.data.content || [];
+    // 使用自定义岗位数据
+    jobs.value = [
+      { jobPostId: 'job1', jobTitle: '前端开发实习生' },
+      { jobPostId: 'job2', jobTitle: '后端开发实习生' },
+      { jobPostId: 'job3', jobTitle: '全栈开发实习生' },
+      { jobPostId: 'job4', jobTitle: '产品经理助理' },
+      { jobPostId: 'job5', jobTitle: 'UI设计实习生' }
+    ];
     
     // 如果是从特定岗位进入，检查该岗位是否在列表中
-    if (isSpecificJob.value) {
-      const currentJob = jobs.value.find(job => job.jobPostId === jobId.value);
-      if (!currentJob) {
-        // 如果岗位不在列表中，需要单独加载该岗位信息
-        loadSingleJob();
-      }
+    if (isSpecificJob.value && !jobs.value.find(job => job.jobPostId === jobId.value)) {
+      // 假设岗位存在
+      jobs.value.push({ jobPostId: jobId.value, jobTitle: `岗位${jobId.value}` });
     }
   } catch (error) {
     ElMessage.error('获取岗位数据失败');
@@ -360,19 +424,9 @@ const fetchJobs = async () => {
   }
 };
 
-// 加载单个岗位信息（当从特定岗位进入，但该岗位不在列表中时）
-const loadSingleJob = async () => {
-  try {
-    const response = await axios.get(`/api/jobs/${jobId.value}`);
-    const job = response.data;
-    // 确保不重复添加
-    if (!jobs.value.find(j => j.jobPostId === job.jobPostId)) {
-      jobs.value.push(job);
-    }
-  } catch (error) {
-    ElMessage.error('获取岗位信息失败');
-    console.error('获取岗位信息失败:', error);
-  }
+// 计算状态统计
+const calculateStats = () => {
+  // 已在fetchApplications中计算
 };
 
 // 获取岗位标题
@@ -436,19 +490,30 @@ const submitReview = async () => {
   try {
     const status = reviewType.value === 'approve' ? 'APPROVED' : 'REJECTED';
     
-    await axios.patch(`http://localhost:8080/api/applications/${selectedApplication.value.applicationId}`, {
-      status,
-      reviewComment: reviewForm.value.comment
-    });
+    // 更新本地数据而不是调用API
+    const appIndex = applications.value.findIndex(app => app.applicationId === selectedApplication.value.applicationId);
+    if (appIndex !== -1) {
+      // 更新应用状态
+      applications.value[appIndex].status = status;
+      applications.value[appIndex].reviewComment = reviewForm.value.comment;
+      
+      // 更新选中的应用状态
+      selectedApplication.value.status = status;
+      selectedApplication.value.reviewComment = reviewForm.value.comment;
+      
+      // 更新统计数据
+      const oldStatus = selectedApplication.value.status;
+      if (oldStatus !== status) {
+        if (oldStatus) stats.value[oldStatus]--;
+        stats.value[status] = (stats.value[status] || 0) + 1;
+      }
+    }
     
     ElMessage.success(`申请已${reviewType.value === 'approve' ? '通过' : '拒绝'}`);
     
     // 关闭对话框
     reviewDialogVisible.value = false;
     detailDialogVisible.value = false;
-    
-    // 重新加载数据
-    fetchApplications();
   } catch (error) {
     console.error('处理申请失败:', error);
     ElMessage.error('处理申请失败，请重试');

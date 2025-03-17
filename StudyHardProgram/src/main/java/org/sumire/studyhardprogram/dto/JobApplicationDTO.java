@@ -9,14 +9,14 @@ import java.time.LocalDateTime;
  */
 @Data
 public class JobApplicationDTO {
-    private String userId;
     private String jobPostId;
-    private String employerId;
+    private String userId;
     private String name;
     private String studentId;
     private String phone;
     private String email;
     private String introduction;
+    private String employerId;
     private String status;
     private LocalDateTime applyTime;
 } 

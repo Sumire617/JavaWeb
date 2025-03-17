@@ -69,7 +69,6 @@
 								<div class="job-salary">{{ job.salaryRange }}/小时</div>
 							</div>
 							<div class="job-info">
-								<div class="company-name">{{ job.employerId }}</div>
 								<div class="job-meta">
 									<span><i class="el-icon-location"></i>{{ job.location }}</span>
 									<span><i class="el-icon-time"></i>{{ job.workSchedule }}</span>
@@ -134,33 +133,8 @@
 				<el-form-item label="电子邮箱" prop="email">
 					<el-input v-model="applyForm.email" />
 				</el-form-item>
-				<el-form-item label="自我介绍" prop="introduction">
-					<el-input
-						v-model="applyForm.introduction"
-						type="textarea"
-						:rows="4"
-						placeholder="请简要介绍自己的情况和申请原因"
-					/>
-				</el-form-item>
-				<el-form-item label="简历" prop="resume">
-					<el-upload
-						class="resume-upload"
-						action="/api/upload/resume"
-						:before-upload="beforeResumeUpload"
-						:on-success="handleResumeSuccess"
-						:on-remove="handleResumeRemove"
-						:limit="1"
-					>
-						<el-button type="primary">
-							<el-icon><Upload /></el-icon>
-							<span>上传简历</span>
-						</el-button>
-						<template #tip>
-							<div class="el-upload__tip">
-								支持 PDF、Word 格式，大小不超过 10MB
-							</div>
-						</template>
-					</el-upload>
+				<el-form-item label="个人介绍" prop="introduction">
+					<el-input v-model="applyForm.introduction" type="textarea" />
 				</el-form-item>
 			</el-form>
 			<template #footer>
@@ -266,8 +240,7 @@ const applyForm = ref({
 	studentId: '',
 	phone: '',
 	email: '',
-	introduction: '',
-	resume: ''
+	introduction: ''
 });
 
 const applyRules = {
@@ -286,13 +259,6 @@ const applyRules = {
 	email: [
 		{ required: true, message: '请输入邮箱', trigger: 'blur' },
 		{ type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-	],
-	introduction: [
-		{ required: true, message: '请输入自我介绍', trigger: 'blur' },
-		{ min: 50, message: '自我介绍不能少于50个字符', trigger: 'blur' }
-	],
-	resume: [
-		{ required: true, message: '请上传简历', trigger: 'change' }
 	]
 };
 
@@ -302,33 +268,6 @@ const handleApply = (job) => {
 	applyDialogVisible.value = true;
 };
 
-// 简历上传前验证
-const beforeResumeUpload = (file) => {
-	const isValidFormat = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type);
-	const isLt10M = file.size / 1024 / 1024 < 10;
-
-	if (!isValidFormat) {
-		ElMessage.error('简历只能是 PDF 或 Word 格式!');
-		return false;
-	}
-	if (!isLt10M) {
-		ElMessage.error('简历大小不能超过 10MB!');
-		return false;
-	}
-	return true;
-};
-
-// 简历上传成功
-const handleResumeSuccess = (response, file) => {
-	applyForm.value.resume = response.url;
-	ElMessage.success('简历上传成功');
-};
-
-// 移除简历
-const handleResumeRemove = () => {
-	applyForm.value.resume = '';
-};
-
 // 提交申请
 const submitApplication = async () => {
 	if (!applyFormRef.value) return;
@@ -336,16 +275,42 @@ const submitApplication = async () => {
 	try {
 		await applyFormRef.value.validate();
 		
+		// 获取当前登录用户信息
+		const userStr = localStorage.getItem('user');
+		if (!userStr) {
+			ElMessage.error('请先登录');
+			router.push('/');
+			return;
+		}
+		const user = JSON.parse(userStr);
+		
 		const applicationData = {
-			...applyForm.value,
-			jobId: currentJob.value.jobId,
-			applyTime: new Date().toISOString()
+			jobPostId: currentJob.value.jobPostId,
+			userId: user.userId,
+			name: applyForm.value.name,
+			studentId: applyForm.value.studentId,
+			phone: applyForm.value.phone,
+			email: applyForm.value.email,
+			introduction: applyForm.value.introduction || ''
 		};
 
-		await axios.post(`/api/jobs/${currentJob.value.jobId}/apply`, applicationData);
-		ElMessage.success('申请提交成功');
-		applyDialogVisible.value = false;
-		applyFormRef.value.resetFields();
+		try {
+			const response = await axios.post('/api/applications', applicationData);
+			if (response.data.error) {
+				ElMessage.error(response.data.error);
+				return;
+			}
+			ElMessage.success('申请提交成功');
+			applyDialogVisible.value = false;
+			applyFormRef.value.resetFields();
+		} catch (error) {
+			if (error.response?.data?.error) {
+				ElMessage.error(error.response.data.error);
+			} else {
+				ElMessage.error('申请提交失败，请稍后重试');
+			}
+			console.error('申请提交失败:', error);
+		}
 	} catch (error) {
 		if (error.name === 'ValidationError') return;
 		ElMessage.error('申请提交失败');

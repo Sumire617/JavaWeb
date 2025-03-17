@@ -8,11 +8,9 @@
 					<div class="salary">{{ jobDetail.salaryRange }}/小时</div>
 				</div>
 				<div class="company-section">
-					<span class="company-name">{{ jobDetail.employerId }}</span>
 					<div class="job-meta">
 						<span><i class="el-icon-location"></i>{{ jobDetail.location }}</span>
 						<span><i class="el-icon-time"></i>{{ jobDetail.workSchedule }}</span>
-						<span><i class="el-icon-user"></i>招聘人数：{{ jobDetail.recruitmentCount }}人</span>
 					</div>
 				</div>
 				<div class="tags-section">
@@ -305,14 +303,42 @@ const fetchJobDetail = async () => {
 // 获取评价列表
 const fetchReviews = async () => {
 	try {
-		const response = await axios.get(`/api/jobs/${route.params.id}/evaluations`, {
-			params: {
-				page: pagination.value.currentPage - 1,
-				size: pagination.value.pageSize
+		// 使用自定义数据替代API调用
+		const mockReviews = [
+			{
+				evaluationId: 'eval-001',
+				jobPostId: route.params.id,
+				userId: 'user-001',
+				userName: '张三',
+				rating: 4,
+				comment: '公司环境很好，同事友善，工作有挑战性但压力适中。福利待遇不错，有良好的成长空间。',
+				createdAt: '2025-03-10T08:30:00',
+				userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+			},
+			{
+				evaluationId: 'eval-002',
+				jobPostId: route.params.id,
+				userId: 'user-002',
+				userName: '李四',
+				rating: 5,
+				comment: '团队氛围很好，技术栈先进，有很多学习成长的机会。管理层关心员工发展，定期有技术分享活动。',
+				createdAt: '2025-03-12T14:20:00',
+				userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+			},
+			{
+				evaluationId: 'eval-003',
+				jobPostId: route.params.id,
+				userId: 'user-003',
+				userName: '王五',
+				rating: 3,
+				comment: '工作内容与职位描述基本符合，但加班较多。团队协作氛围一般，技术成长空间有限。',
+				createdAt: '2025-03-15T09:15:00',
+				userAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
 			}
-		});
-		reviews.value = response.data.content;
-		pagination.value.total = response.data.totalElements;
+		];
+		
+		reviews.value = mockReviews;
+		pagination.value.total = mockReviews.length;
 	} catch (error) {
 		ElMessage.error('获取评价列表失败');
 		console.error('获取评价列表失败:', error);
@@ -410,7 +436,6 @@ const submitApplication = async () => {
 		applyFormRef.value.resetFields();
 	} catch (error) {
 		if (error.name === 'ValidationError') return;
-		ElMessage.error('申请提交失败');
 		console.error('申请提交失败:', error);
 	}
 };

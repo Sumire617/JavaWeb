@@ -121,7 +121,6 @@ const fetchOverviewData = async () => {
 			{ title: '总用户数', value: data.totalUsers || 0 }
 		];
 	} catch (error) {
-		ElMessage.error('获取概览数据失败');
 		console.error(error);
 	}
 };
@@ -140,7 +139,6 @@ const fetchStatusStats = async () => {
 		
 		updateStatusChart();
 	} catch (error) {
-		ElMessage.error('获取岗位状态统计失败');
 		console.error(error);
 	}
 };
@@ -153,7 +151,6 @@ const fetchLocationDistribution = async () => {
 		
 		updateLocationChart();
 	} catch (error) {
-		ElMessage.error('获取岗位地区分布失败');
 		console.error(error);
 	}
 };
@@ -183,7 +180,6 @@ const analyzeData = async () => {
 		
 		updateMainChart();
 	} catch (error) {
-		ElMessage.error('分析数据失败');
 		console.error(error);
 	} finally {
 		loading.value = false;

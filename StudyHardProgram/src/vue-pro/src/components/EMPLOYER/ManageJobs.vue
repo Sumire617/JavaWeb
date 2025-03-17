@@ -84,7 +84,7 @@ const handleClose = async (jobId) => {
       type: 'warning'
     });
     
-    await axios.patch(`/api/employer/jobs/${jobId}/close`);
+    await axios.patch(`/api/jobs/${jobId}/close`);
     ElMessage.success('岗位已关闭');
     fetchJobs();
   } catch (error) {
@@ -101,7 +101,7 @@ const handleDelete = async (jobId) => {
       type: 'error'
     });
     
-    await axios.delete(`/api/employer/jobs/${jobId}`);
+    await axios.delete(`/api/jobs/${jobId}`);
     ElMessage.success('岗位已删除');
     fetchJobs();
   } catch (error) {
@@ -113,6 +113,7 @@ const handleDelete = async (jobId) => {
 
 // 查看应聘者
 const handleViewApplicants = (jobId) => {
+  // 注意：应聘者数据不再从API获取，现在使用自定义数据显示
   router.push(`/employer/jobs/${jobId}/applicants`);
 };
 

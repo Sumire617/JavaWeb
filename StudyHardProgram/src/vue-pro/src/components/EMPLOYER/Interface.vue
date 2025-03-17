@@ -54,15 +54,6 @@ const handleCommand = (command) => {
           <el-menu-item index="/employer/jobs/manage">岗位管理</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="notifications">
-          <template #title>
-            <el-icon><Bell /></el-icon>
-            <span>通知中心</span>
-          </template>
-          <el-menu-item index="/employer/notifications/publish">发布通知</el-menu-item>
-          <el-menu-item index="/employer/notifications/manage">通知管理</el-menu-item>
-        </el-sub-menu>
-
         <el-menu-item index="/employer/analysis">
           <el-icon><TrendCharts /></el-icon>
           <template #title>数据分析</template>

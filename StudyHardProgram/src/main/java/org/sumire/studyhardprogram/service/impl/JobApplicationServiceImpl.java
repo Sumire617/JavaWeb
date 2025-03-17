@@ -6,10 +6,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.sumire.studyhardprogram.model.JobApplication;
+import org.sumire.studyhardprogram.model.JobPost;
+import org.sumire.studyhardprogram.model.User;
 import org.sumire.studyhardprogram.repository.JobApplicationRepository;
+import org.sumire.studyhardprogram.repository.JobPostRepository;
+import org.sumire.studyhardprogram.repository.UserRepository;
 import org.sumire.studyhardprogram.service.JobApplicationService;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -18,14 +25,47 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     @Autowired
     private JobApplicationRepository jobApplicationRepository;
 
+    @Autowired
+    private JobPostRepository jobPostRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
     @Override
     @Transactional
     public JobApplication createApplication(JobApplication application) {
-        // 设置申请ID
-        application.setApplicationId(UUID.randomUUID().toString());
-        // 设置申请时间和初始状态
-        application.setInitialApplicationState();
-        return jobApplicationRepository.save(application);
+        try {
+            // 检查是否已经申请过
+            boolean hasApplied = jobApplicationRepository.existsByJobPost_JobPostIdAndUser_UserId(
+                    application.getJobPost().getJobPostId(),
+                    application.getUser().getUserId());
+            if (hasApplied) {
+                throw new RuntimeException("您已经申请过这个职位了");
+            }
+
+            // 设置申请ID
+            application.setApplicationId(UUID.randomUUID().toString());
+            
+            // 查找并设置JobPost
+            String jobPostId = application.getJobPost().getJobPostId();
+            JobPost jobPost = jobPostRepository.findById(jobPostId)
+                    .orElseThrow(() -> new RuntimeException("职位不存在"));
+            application.setJobPost(jobPost);
+            
+            // 查找并设置User
+            String userId = application.getUser().getUserId();
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("用户不存在"));
+            application.setUser(user);
+            
+            // 设置申请时间和初始状态
+            application.setApplyTime(LocalDateTime.now());
+            application.setStatus(JobApplication.STATUS_PENDING);
+            
+            return jobApplicationRepository.save(application);
+        } catch (Exception e) {
+            throw new RuntimeException("创建申请失败: " + e.getMessage());
+        }
     }
 
     @Override
@@ -52,5 +92,51 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     public boolean canUserReview(String jobPostId, String userId) {
         return jobApplicationRepository.existsByJobPostAndUserAndStatus(
                 jobPostId, userId, JobApplication.STATUS_APPROVED);
+    }
+    
+    @Override
+    public Optional<JobApplication> getApplicationById(String applicationId) {
+        return jobApplicationRepository.findById(applicationId);
+    }
+    
+    @Override
+    public Page<JobApplication> getApplicationsByJobPostIdAndStatus(String jobPostId, String status, Pageable pageable) {
+        return jobApplicationRepository.findByJobPostIdAndStatus(jobPostId, status, pageable);
+    }
+
+    @Override
+    public Map<String, Object> getJobApplicationInfo(String jobPostId, String userId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        // 检查职位是否存在
+        JobPost jobPost = jobPostRepository.findById(jobPostId)
+                .orElseThrow(() -> new RuntimeException("Job post not found"));
+        
+        // 如果提供了用户ID，检查用户是否已经申请过
+        if (userId != null) {
+            boolean hasApplied = jobApplicationRepository.existsByJobPost_JobPostIdAndUser_UserId(jobPostId, userId);
+            result.put("hasApplied", hasApplied);
+            
+            if (hasApplied) {
+                Optional<JobApplication> application = jobApplicationRepository.findByJobPost_JobPostIdAndUser_UserId(jobPostId, userId);
+                application.ifPresent(app -> {
+                    result.put("applicationStatus", app.getStatus());
+                    result.put("applicationId", app.getApplicationId());
+                });
+            }
+        }
+        
+        // 获取申请统计信息
+        long totalApplications = jobApplicationRepository.countByJobPost_JobPostId(jobPostId);
+        long pendingApplications = jobApplicationRepository.countByJobPost_JobPostIdAndStatus(jobPostId, JobApplication.STATUS_PENDING);
+        long approvedApplications = jobApplicationRepository.countByJobPost_JobPostIdAndStatus(jobPostId, JobApplication.STATUS_APPROVED);
+        long rejectedApplications = jobApplicationRepository.countByJobPost_JobPostIdAndStatus(jobPostId, JobApplication.STATUS_REJECTED);
+        
+        result.put("totalApplications", totalApplications);
+        result.put("pendingApplications", pendingApplications);
+        result.put("approvedApplications", approvedApplications);
+        result.put("rejectedApplications", rejectedApplications);
+        
+        return result;
     }
 } 

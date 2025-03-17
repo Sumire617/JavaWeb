@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.sumire.studyhardprogram.model.Message;
+import java.util.List;
 
 public interface MessageRepository extends JpaRepository<Message, String> {
     
@@ -33,4 +34,14 @@ public interface MessageRepository extends JpaRepository<Message, String> {
     
     // 查询与特定申请相关的消息
     Page<Message> findByApplicationIdOrderBySendTimeDesc(String applicationId, Pageable pageable);
+
+    List<Message> findBySenderIdOrReceiverIdOrderBySendTimeDesc(String senderId, String receiverId);
+    
+    @Query("SELECT m FROM Message m WHERE (m.senderId = :userId OR m.receiverId = :userId) AND m.jobPostId = :jobPostId ORDER BY m.sendTime DESC")
+    List<Message> findMessagesByJobPost(@Param("userId") String userId, @Param("jobPostId") String jobPostId);
+    
+    @Query("SELECT m FROM Message m WHERE (m.senderId = :userId OR m.receiverId = :userId) AND m.applicationId = :applicationId ORDER BY m.sendTime DESC")
+    List<Message> findMessagesByApplication(@Param("userId") String userId, @Param("applicationId") String applicationId);
+    
+    long countByReceiverIdAndReadStatusFalse(String receiverId);
 } 

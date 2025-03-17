@@ -48,6 +48,10 @@ public class UserService {
             user.setEmail(userDetails.getEmail());
             // 修改手机号
             user.setPhoneNumber(userDetails.getPhoneNumber());
+            // 修改用户状态
+            user.setUserStatus(userDetails.getUserStatus());
+            // 修改更新时间
+            user.setUpdatedAt(userDetails.getUpdatedAt());
             return userRepository.save(user);
         }
         return null;

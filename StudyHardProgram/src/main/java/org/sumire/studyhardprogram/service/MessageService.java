@@ -4,14 +4,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.sumire.studyhardprogram.dto.MessageDTO;
 import org.sumire.studyhardprogram.model.Message;
+import java.util.List;
 
 public interface MessageService {
     
     // 发送消息
-    Message sendMessage(MessageDTO messageDTO);
+    MessageDTO sendMessage(MessageDTO messageDTO);
     
     // 标记消息为已读
-    Message markAsRead(String messageId);
+    void markAsRead(String messageId);
     
     // 获取两人之间的对话
     Page<Message> getConversation(String userId1, String userId2, Pageable pageable);
@@ -33,4 +34,10 @@ public interface MessageService {
     
     // 获取消息详情
     Message getMessageById(String messageId);
+
+    List<MessageDTO> getMessages(String userId);
+    
+    List<MessageDTO> getMessagesByJobPost(String userId, String jobPostId);
+    
+    List<MessageDTO> getMessagesByApplication(String userId, String applicationId);
 } 

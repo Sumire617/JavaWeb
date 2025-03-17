@@ -1,6 +1,13 @@
 <template>
   <div class="applications-container">
-    <h2 class="page-title">申请管理</h2>
+    <div class="page-header">
+      <h2 class="page-title">{{ isSpecificJob ? '岗位应聘者' : '申请管理' }}</h2>
+      <div v-if="isSpecificJob" class="header-actions">
+        <el-button type="primary" @click="goBack">
+          <el-icon><Back /></el-icon> 返回岗位管理
+        </el-button>
+      </div>
+    </div>
     
     <div class="filter-section">
       <el-select v-model="statusFilter" placeholder="申请状态" @change="handleFilterChange">
@@ -242,9 +249,15 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import MessageChat from '../common/MessageChat.vue';
+
+const route = useRoute();
+const router = useRouter();
+const jobId = computed(() => route.params.jobId);
+const isSpecificJob = computed(() => !!jobId.value);
 
 const loading = ref(true);
 const applications = ref([]);
@@ -286,66 +299,79 @@ const getCurrentUser = () => {
   return JSON.parse(userStr);
 };
 
-// 加载申请列表
-const loadApplications = async () => {
-  if (!currentUser.value) return;
-  
+// 加载应聘者数据
+const fetchApplications = async () => {
   try {
     loading.value = true;
     
-    // 构建请求参数
-    const params = {
-      page: pagination.value.currentPage - 1,
-      size: pagination.value.pageSize
-    };
+    let url = '/api/applications';
+    let params = {};
     
-    let url = `http://localhost:8080/api/applications/employer/${currentUser.value.userId}`;
+    // 如果是从特定岗位进入，只加载该岗位的申请
+    if (isSpecificJob.value) {
+      url = `/api/applications/job/${jobId.value}`;
+      // 设置当前选中的岗位过滤器
+      jobFilter.value = jobId.value;
+    } else if (jobFilter.value !== 'all') {
+      // 如果选择了特定岗位
+      url = `/api/applications/job/${jobFilter.value}`;
+    }
     
-    // 如果有岗位筛选
-    if (jobFilter.value !== 'all') {
-      url = `http://localhost:8080/api/applications/status`;
-      params.jobPostId = jobFilter.value;
-      params.status = statusFilter.value !== 'all' ? statusFilter.value : null;
+    if (statusFilter.value !== 'all') {
+      params.status = statusFilter.value;
     }
     
     const response = await axios.get(url, { params });
+    applications.value = response.data.content || [];
+    totalApplications.value = response.data.totalElements || applications.value.length;
     
-    applications.value = response.data.content;
-    pagination.value.total = response.data.totalElements;
+    // 计算状态统计
+    calculateStats();
   } catch (error) {
-    console.error('加载申请列表失败:', error);
-    ElMessage.error('加载申请列表失败，请重试');
+    ElMessage.error('获取申请数据失败');
+    console.error('获取申请数据失败:', error);
   } finally {
     loading.value = false;
   }
 };
 
-// 加载岗位列表
-const loadJobs = async () => {
-  if (!currentUser.value) return;
-  
+// 加载岗位数据
+const fetchJobs = async () => {
   try {
-    const response = await axios.get(`http://localhost:8080/api/jobs`, {
+    const response = await axios.get('/api/jobs', {
       params: {
-        employerId: currentUser.value.userId
+        page: 0,
+        size: 100 // 加载足够多的岗位以供筛选
       }
     });
+    jobs.value = response.data.content || [];
     
-    jobs.value = response.data.content;
+    // 如果是从特定岗位进入，检查该岗位是否在列表中
+    if (isSpecificJob.value) {
+      const currentJob = jobs.value.find(job => job.jobPostId === jobId.value);
+      if (!currentJob) {
+        // 如果岗位不在列表中，需要单独加载该岗位信息
+        loadSingleJob();
+      }
+    }
   } catch (error) {
-    console.error('加载岗位列表失败:', error);
+    ElMessage.error('获取岗位数据失败');
+    console.error('获取岗位数据失败:', error);
   }
 };
 
-// 加载申请统计
-const loadStats = async () => {
-  if (!currentUser.value) return;
-  
+// 加载单个岗位信息（当从特定岗位进入，但该岗位不在列表中时）
+const loadSingleJob = async () => {
   try {
-    const response = await axios.get(`http://localhost:8080/api/applications/employer/${currentUser.value.userId}/stats`);
-    stats.value = response.data;
+    const response = await axios.get(`/api/jobs/${jobId.value}`);
+    const job = response.data;
+    // 确保不重复添加
+    if (!jobs.value.find(j => j.jobPostId === job.jobPostId)) {
+      jobs.value.push(job);
+    }
   } catch (error) {
-    console.error('加载申请统计失败:', error);
+    ElMessage.error('获取岗位信息失败');
+    console.error('获取岗位信息失败:', error);
   }
 };
 
@@ -422,8 +448,7 @@ const submitReview = async () => {
     detailDialogVisible.value = false;
     
     // 重新加载数据
-    loadApplications();
-    loadStats();
+    fetchApplications();
   } catch (error) {
     console.error('处理申请失败:', error);
     ElMessage.error('处理申请失败，请重试');
@@ -439,22 +464,26 @@ const contactApplicant = (application) => {
 // 处理筛选变化
 const handleFilterChange = () => {
   pagination.value.currentPage = 1;
-  loadApplications();
+  fetchApplications();
 };
 
 // 处理分页变化
 const handleCurrentChange = (page) => {
   pagination.value.currentPage = page;
-  loadApplications();
+  fetchApplications();
+};
+
+// 返回岗位管理页面
+const goBack = () => {
+  router.push('/employer/jobs/manage');
 };
 
 // 初始化
-onMounted(() => {
+onMounted(async () => {
   currentUser.value = getCurrentUser();
   if (currentUser.value) {
-    loadJobs();
-    loadStats();
-    loadApplications();
+    await fetchJobs();
+    await fetchApplications();
   }
 });
 </script>
@@ -464,6 +493,13 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .page-title {

@@ -1,7 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import axios from 'axios';
+import { Search, Plus } from '@element-plus/icons-vue';
+import axios from "axios";
 
 const staffList = ref([]);
 const loading = ref(false);
@@ -57,12 +58,34 @@ const pagination = ref({
   total: 0
 });
 
+// 获取当前登录用户ID
+const getCurrentUserId = () => {
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      return user.userId;
+    } catch (e) {
+      console.error('解析用户信息失败:', e);
+      return null;
+    }
+  }
+  return null;
+};
+
 // 获取员工列表
 const fetchStaffList = async () => {
   try {
     loading.value = true;
+    const userId = getCurrentUserId();
+    if (!userId) {
+      ElMessage.error('未获取到用户信息，请重新登录');
+      return;
+    }
+    
     const { data } = await axios.get('/api/employer/staff', {
       params: {
+        employerId: userId,
         page: pagination.value.currentPage - 1,
         size: pagination.value.pageSize,
         query: searchQuery.value
@@ -110,20 +133,33 @@ const handleSubmit = async () => {
     await formRef.value.validate();
     loading.value = true;
     
+    const userId = getCurrentUserId();
+    if (!userId) {
+      ElMessage.error('未获取到用户信息，请重新登录');
+      return;
+    }
+    
     if (isEdit.value) {
-      await axios.put(`/api/employer/staff/${staffForm.value.id}`, staffForm.value);
+      await axios.put(`/api/employer/staff/${staffForm.value.id}`, staffForm.value, {
+        params: { employerId: userId }
+      });
       ElMessage.success('更新成功');
     } else {
-      await axios.post('/api/employer/staff', staffForm.value);
+      await axios.post('/api/employer/staff', staffForm.value, {
+        params: { employerId: userId }
+      });
       ElMessage.success('添加成功');
     }
     
     dialogVisible.value = false;
-    fetchStaffList();
+    await fetchStaffList();
   } catch (error) {
     if (error.name === 'ValidationError') return;
     ElMessage.error(isEdit.value ? '更新失败' : '添加失败');
     console.error('提交员工信息失败:', error);
+    if (error.response && error.response.data) {
+      ElMessage.error(error.response.data);
+    }
   } finally {
     loading.value = false;
   }
@@ -136,7 +172,15 @@ const handleDelete = async (id) => {
       type: 'warning'
     });
     
-    await axios.delete(`/api/employer/staff/${id}`);
+    const userId = getCurrentUserId();
+    if (!userId) {
+      ElMessage.error('未获取到用户信息，请重新登录');
+      return;
+    }
+    
+    await axios.delete(`/api/employer/staff/${id}`, {
+      params: { employerId: userId }
+    });
     ElMessage.success('删除成功');
     fetchStaffList();
   } catch (error) {

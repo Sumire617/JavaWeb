@@ -84,7 +84,7 @@ const handleSubmit = async () => {
       }
     });
     
-    await axios.post('/api/employer/notifications', formData, {
+    await axios.post('/api/notifications', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -106,33 +106,6 @@ const handleSubmit = async () => {
 const handleReset = () => {
   formRef.value?.resetFields();
   notificationForm.value.attachments = [];
-};
-
-// 上传前校验
-const beforeUpload = (file) => {
-  const isLt10M = file.size / 1024 / 1024 < 10;
-  if (!isLt10M) {
-    ElMessage.error('附件大小不能超过 10MB!');
-    return false;
-  }
-  return true;
-};
-
-// 上传成功回调
-const handleUploadSuccess = (response, file) => {
-  notificationForm.value.attachments.push({
-    name: file.name,
-    url: response.url,
-    raw: file.raw
-  });
-};
-
-// 移除附件
-const handleRemove = (file) => {
-  const index = notificationForm.value.attachments.findIndex(item => item.name === file.name);
-  if (index !== -1) {
-    notificationForm.value.attachments.splice(index, 1);
-  }
 };
 </script>
 
@@ -218,23 +191,6 @@ const handleRemove = (file) => {
           />
         </el-form-item>
 
-        <el-form-item label="附件">
-          <el-upload
-            action="/api/upload/notification"
-            :before-upload="beforeUpload"
-            :on-success="handleUploadSuccess"
-            :on-remove="handleRemove"
-            multiple
-          >
-            <el-button type="primary">
-              <el-icon><Upload /></el-icon>
-              <span>上传附件</span>
-            </el-button>
-            <template #tip>
-              <div class="upload-tip">支持任意格式文件，单个文件不超过10MB</div>
-            </template>
-          </el-upload>
-        </el-form-item>
 
         <el-form-item>
           <el-button type="primary" @click="handleSubmit">发布通知</el-button>

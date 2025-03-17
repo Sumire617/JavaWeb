@@ -29,22 +29,46 @@ const statusOptions = [
 // 获取岗位列表
 const fetchJobs = async () => {
   try {
-    loading.value = true;
-    const response = await axios.get('/api/employer/jobs', {
+    console.log('开始获取岗位数据，参数：', {
+      page: pagination.value.currentPage - 1,
+      size: pagination.value.pageSize,
+      keyword: searchQuery.value || null,
+      status: currentStatus.value === 'all' ? null : currentStatus.value
+    });
+
+    const response = await axios.get('/api/jobs', {
       params: {
         page: pagination.value.currentPage - 1,
         size: pagination.value.pageSize,
-        status: currentStatus.value === 'all' ? null : currentStatus.value,
-        query: searchQuery.value || null
+        keyword: searchQuery.value || null,
+        status: currentStatus.value === 'all' ? null : currentStatus.value
+      },
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
-    jobList.value = response.data.content;
-    pagination.value.total = response.data.totalElements;
+    
+    console.log('API响应数据：', response.data);
+    
+    if (response.data && Array.isArray(response.data.content)) {
+      jobList.value = response.data.content;
+      pagination.value.total = response.data.totalElements;
+      console.log('更新后的岗位数据：', jobList.value);
+      console.log('分页信息：', {
+        currentPage: pagination.value.currentPage,
+        pageSize: pagination.value.pageSize,
+        total: pagination.value.total
+      });
+    } else {
+      console.warn('API返回的数据格式不正确：', response.data);
+      ElMessage.warning('返回的数据格式不正确');
+    }
   } catch (error) {
-    ElMessage.error('获取岗位列表失败');
-    console.error('获取岗位列表失败:', error);
-  } finally {
-    loading.value = false;
+    console.error('获取岗位数据失败:', error);
+    console.error('错误详情:', error.response?.data);
+    ElMessage.error('获取岗位数据失败：' + (error.response?.data?.message || error.message));
   }
 };
 
@@ -137,6 +161,94 @@ const formatDateTime = (dateTime) => {
   });
 };
 
+// 发布新岗位
+const addJob = async () => {
+  try {
+    await ElMessageBox({
+      title: '发布新岗位',
+      message: `
+        <div class="custom-message-box">
+          <form>
+            <label for="jobTitle">岗位名称:</label>
+            <input type="text" id="jobTitle" placeholder="请输入岗位名称" style="width: 100%; margin-bottom: 10px;">
+
+            <label for="jobType">岗位类型:</label>
+            <select id="jobType" style="width: 100%; margin-bottom: 10px;">
+              <option value="全职">全职</option>
+              <option value="兼职">兼职</option>
+              <option value="实习">实习</option>
+              <option value="项目制">项目制</option>
+              <option value="临时工">临时工</option>
+            </select>
+
+            <label for="jobDescription">岗位描述:</label>
+            <textarea id="jobDescription" placeholder="请输入岗位描述" style="width: 100%; margin-bottom: 10px;"></textarea>
+
+            <label for="requirements">任职要求:</label>
+            <textarea id="requirements" placeholder="请输入任职要求" style="width: 100%; margin-bottom: 10px;"></textarea>
+
+            <label for="salaryRange">薪资范围:</label>
+            <select id="salaryRange" style="width: 100%; margin-bottom: 10px;">
+              <option value="3k-5k">3k-5k</option>
+              <option value="5k-8k">5k-8k</option>
+              <option value="8k-12k">8k-12k</option>
+              <option value="12k-15k">12k-15k</option>
+              <option value="15k-20k">15k-20k</option>
+              <option value="20k-30k">20k-30k</option>
+              <option value="30k以上">30k以上</option>
+              <option value="面议">面议</option>
+            </select>
+
+            <label for="location">工作地点:</label>
+            <input type="text" id="location" placeholder="请输入工作地点" style="width: 100%; margin-bottom: 10px;">
+          </form>
+        </div>
+      `,
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      showCancelButton: true,
+      dangerouslyUseHTMLString: true,
+      beforeClose: async (action, instance, done) => {
+        if (action === 'confirm') {
+          const jobTitleEl = document.getElementById('jobTitle');
+          const jobTypeEl = document.getElementById('jobType');
+          const jobDescriptionEl = document.getElementById('jobDescription');
+          const requirementsEl = document.getElementById('requirements');
+          const salaryRangeEl = document.getElementById('salaryRange');
+          const locationEl = document.getElementById('location');
+          
+          if (jobTitleEl && jobTypeEl && jobDescriptionEl && requirementsEl && salaryRangeEl && locationEl) {
+            const jobData = {
+              jobTitle: jobTitleEl.value,
+              jobType: jobTypeEl.value,
+              jobDescription: jobDescriptionEl.value,
+              requirements: requirementsEl.value,
+              salaryRange: salaryRangeEl.value,
+              location: locationEl.value,
+              status: 'PENDING',
+              postedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            
+            try {
+              const response = await axios.post('/api/jobs', jobData);
+              if (response.status === 200 || response.status === 201) {
+                ElMessage.success('岗位发布成功！');
+                await fetchJobs();
+              }
+            } catch (error) {
+              ElMessage.error('岗位发布失败：' + (error.response?.data?.message || error.message));
+            }
+          }
+        }
+        done();
+      }
+    });
+  } catch (error) {
+    console.error('发布岗位失败:', error);
+  }
+};
+
 onMounted(() => {
   fetchJobs();
 });
@@ -193,13 +305,13 @@ onMounted(() => {
         v-loading="loading"
         style="width: 100%"
       >
-        <el-table-column prop="jobTitle" label="岗位名称" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="department" label="所属部门" width="120" />
-        <el-table-column prop="jobType" label="类型" width="100" />
-        <el-table-column prop="location" label="工作地点" width="120" show-overflow-tooltip />
-        <el-table-column prop="salaryRange" label="薪资" width="120" />
-        <el-table-column prop="recruitmentCount" label="招聘人数" width="100" align="center" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="jobTitle" label="岗位名称"  show-overflow-tooltip />
+        <el-table-column prop="department" label="所属部门"  />
+        <el-table-column prop="jobType" label="类型"  />
+        <el-table-column prop="location" label="工作地点"  show-overflow-tooltip />
+        <el-table-column prop="salaryRange" label="薪资"  />
+        <el-table-column prop="recruitmentCount" label="招聘人数"  align="center" />
+        <el-table-column prop="status" label="状态">
           <template #default="{ row }">
             <el-tag :type="row.status === 'active' ? 'success' : (row.status === 'pending' ? 'warning' : 'info')">
               {{ statusOptions.find(option => option.value === row.status)?.label || row.status }}

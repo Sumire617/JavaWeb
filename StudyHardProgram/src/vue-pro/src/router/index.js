@@ -79,6 +79,17 @@ const routes = [
         component: () => import('@/components/EMPLOYER/ManageJobs.vue')
       },
       {
+        path: 'jobs/:jobId/applicants',
+        name: 'JobApplicants',
+        component: () => import('@/components/EMPLOYER/Applications.vue')
+      },
+      {
+        path: 'jobs/edit/:jobId',
+        name: 'EditJob',
+        component: () => import('@/components/EMPLOYER/PostJob.vue'),
+        props: (route) => ({ isEditing: true, jobId: route.params.jobId })
+      },
+      {
         path: 'notifications/publish',
         name: 'PublishNotification',
         component: () => import('@/components/EMPLOYER/PublishNotification.vue')
@@ -87,11 +98,6 @@ const routes = [
         path: 'notifications/manage',
         name: 'ManageNotifications',
         component: () => import('@/components/EMPLOYER/ManageNotifications.vue')
-      },
-      {
-        path: 'notifications/chat',
-        name: 'Chat',
-        component: () => import('@/components/EMPLOYER/Chat.vue')
       },
       {
         path: 'analysis',

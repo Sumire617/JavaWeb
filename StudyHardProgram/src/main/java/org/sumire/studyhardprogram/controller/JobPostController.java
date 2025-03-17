@@ -90,4 +90,51 @@ public class JobPostController {
         Page<JobPost> pendingJobs = jobPostService.findPendingJobs(pageRequest);
         return ResponseEntity.ok(pendingJobs);
     }
+
+    /**
+     * 获取已审核的公开工作列表
+     * @param page 页码，从0开始
+     * @param size 每页大小
+     * @return 已审核的工作分页列表
+     */
+    @GetMapping("/public")
+    public ResponseEntity<Page<JobPost>> getPublicJobs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("postedAt").descending());
+        Page<JobPost> publicJobs = jobPostService.findJobs(null, null, null, "APPROVED", pageRequest);
+        return ResponseEntity.ok(publicJobs);
+    }
+    
+    /**
+     * 关闭岗位
+     * @param jobId 岗位ID
+     * @return 操作结果
+     */
+    @PatchMapping("/{jobId}/close")
+    public ResponseEntity<JobPost> closeJob(@PathVariable String jobId) {
+        JobPost job = jobPostService.getJobById(jobId);
+        job.setStatus("CLOSED");
+        job.setUpdatedAt(java.time.Instant.now());
+        JobPost updatedJob = jobPostService.updateJob(jobId, job);
+        return ResponseEntity.ok(updatedJob);
+    }
+    
+    /**
+     * 为雇主创建关闭岗位端点
+     */
+    @PatchMapping("/employer/jobs/{jobId}/close")
+    public ResponseEntity<JobPost> employerCloseJob(@PathVariable String jobId) {
+        return closeJob(jobId);
+    }
+    
+    /**
+     * 为雇主创建删除岗位端点
+     */
+    @DeleteMapping("/employer/jobs/{jobId}")
+    public ResponseEntity<Void> employerDeleteJob(@PathVariable String jobId) {
+        jobPostService.deleteJob(jobId);
+        return ResponseEntity.ok().build();
+    }
 }

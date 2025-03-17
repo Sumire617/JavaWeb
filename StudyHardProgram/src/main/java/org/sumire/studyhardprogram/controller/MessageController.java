@@ -11,6 +11,7 @@ import org.sumire.studyhardprogram.dto.MessageDTO;
 import org.sumire.studyhardprogram.model.Message;
 import org.sumire.studyhardprogram.service.MessageService;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -22,13 +23,38 @@ public class MessageController {
     private MessageService messageService;
     
     @PostMapping
-    public ResponseEntity<Message> sendMessage(@RequestBody MessageDTO messageDTO) {
+    public ResponseEntity<MessageDTO> sendMessage(@RequestBody MessageDTO messageDTO) {
         return ResponseEntity.ok(messageService.sendMessage(messageDTO));
     }
     
-    @PatchMapping("/{messageId}/read")
-    public ResponseEntity<Message> markAsRead(@PathVariable String messageId) {
-        return ResponseEntity.ok(messageService.markAsRead(messageId));
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<MessageDTO>> getUserMessages(@PathVariable String userId) {
+        return ResponseEntity.ok(messageService.getMessages(userId));
+    }
+    
+    @GetMapping("/job-post/{jobPostId}/user/{userId}")
+    public ResponseEntity<List<MessageDTO>> getMessagesByJobPost(
+            @PathVariable String jobPostId,
+            @PathVariable String userId) {
+        return ResponseEntity.ok(messageService.getMessagesByJobPost(userId, jobPostId));
+    }
+    
+    @GetMapping("/application/{applicationId}/user/{userId}")
+    public ResponseEntity<List<MessageDTO>> getMessagesByApplication(
+            @PathVariable String applicationId,
+            @PathVariable String userId) {
+        return ResponseEntity.ok(messageService.getMessagesByApplication(userId, applicationId));
+    }
+    
+    @PutMapping("/{messageId}/read")
+    public ResponseEntity<Void> markAsRead(@PathVariable String messageId) {
+        messageService.markAsRead(messageId);
+        return ResponseEntity.ok().build();
+    }
+    
+    @GetMapping("/unread-count/{userId}")
+    public ResponseEntity<Long> getUnreadCount(@PathVariable String userId) {
+        return ResponseEntity.ok(messageService.getUnreadCount(userId));
     }
     
     @GetMapping("/conversation")
@@ -57,12 +83,6 @@ public class MessageController {
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("sendTime").descending());
         return ResponseEntity.ok(messageService.getSentMessages(userId, pageable));
-    }
-    
-    @GetMapping("/unread/{userId}")
-    public ResponseEntity<Map<String, Long>> getUnreadCount(@PathVariable String userId) {
-        long count = messageService.getUnreadCount(userId);
-        return ResponseEntity.ok(Map.of("unreadCount", count));
     }
     
     @GetMapping("/job/{jobPostId}")

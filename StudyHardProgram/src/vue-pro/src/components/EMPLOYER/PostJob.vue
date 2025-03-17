@@ -1,7 +1,22 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
+
+// 接收props
+const props = defineProps({
+  isEditing: {
+    type: Boolean,
+    default: false
+  },
+  jobId: {
+    type: String,
+    default: ''
+  }
+});
+
+const router = useRouter();
 
 const jobForm = ref({
   jobTitle: '',
@@ -74,6 +89,7 @@ const formRules = {
 
 const formRef = ref(null);
 const loading = ref(false);
+const pageTitle = ref(props.isEditing ? '编辑岗位' : '发布岗位');
 
 // 岗位类型选项
 const jobTypes = [
@@ -125,23 +141,93 @@ const workSchedules = [
   '弹性工作'
 ];
 
+// 加载岗位数据（编辑模式）
+const loadJobData = async () => {
+  if (!props.isEditing || !props.jobId) return;
+  
+  try {
+    loading.value = true;
+    const response = await axios.get(`/api/jobs/${props.jobId}`);
+    const jobData = response.data;
+    
+    // 填充表单数据
+    jobForm.value.jobTitle = jobData.jobTitle || '';
+    jobForm.value.jobType = jobData.jobType || '';
+    jobForm.value.location = jobData.location || '';
+    jobForm.value.salaryRange = jobData.salaryRange || '';
+    jobForm.value.jobDescription = jobData.jobDescription || '';
+    jobForm.value.requirements = jobData.requirements || '';
+    
+    // 其他字段如果API返回了就填充
+    if (jobData.department) jobForm.value.department = jobData.department;
+    if (jobData.experienceRequirement) jobForm.value.experienceRequirement = jobData.experienceRequirement;
+    if (jobData.educationRequirement) jobForm.value.educationRequirement = jobData.educationRequirement;
+    if (jobData.benefits) jobForm.value.benefits = jobData.benefits;
+    if (jobData.recruitmentCount) jobForm.value.recruitmentCount = jobData.recruitmentCount;
+    if (jobData.deadline) jobForm.value.deadline = jobData.deadline;
+    if (jobData.workSchedule) jobForm.value.workSchedule = jobData.workSchedule;
+    if (jobData.contactPerson) jobForm.value.contactPerson = jobData.contactPerson;
+    if (jobData.contactEmail) jobForm.value.contactEmail = jobData.contactEmail;
+    if (jobData.contactPhone) jobForm.value.contactPhone = jobData.contactPhone;
+    
+  } catch (error) {
+    ElMessage.error('加载岗位数据失败: ' + (error.response?.data?.message || error.message));
+    console.error('加载岗位数据失败:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 组件加载时执行
+onMounted(() => {
+  if (props.isEditing) {
+    loadJobData();
+  }
+});
+
 // 提交表单
-const handleSubmit = async () => {
+const submitForm = async () => {
   if (!formRef.value) return;
   
   try {
     await formRef.value.validate();
     loading.value = true;
     
-    const response = await axios.post('/api/employer/jobs', jobForm.value);
-    ElMessage.success('岗位发布成功');
+    // 转换数据格式以匹配后端API
+    const jobData = {
+      jobTitle: jobForm.value.jobTitle,
+      jobType: jobForm.value.jobType,
+      jobDescription: jobForm.value.jobDescription,
+      requirements: jobForm.value.requirements,
+      salaryRange: jobForm.value.salaryRange,
+      location: jobForm.value.location,
+      updatedAt: new Date().toISOString()
+    };
     
-    // 重置表单
-    formRef.value.resetFields();
+    // 根据是否编辑模式决定API调用
+    let response;
+    if (props.isEditing && props.jobId) {
+      // 编辑模式 - PUT请求
+      response = await axios.put(`/api/jobs/${props.jobId}`, jobData);
+      if (response.status === 200) {
+        ElMessage.success('岗位更新成功');
+        // 返回岗位管理页面
+        router.push('/employer/jobs/manage');
+      }
+    } else {
+      // 新增模式 - POST请求
+      jobData.status = 'PENDING';
+      jobData.postedAt = new Date().toISOString();
+      response = await axios.post('/api/jobs', jobData);
+      if (response.status === 200 || response.status === 201) {
+        ElMessage.success('岗位发布成功');
+        formRef.value.resetFields();
+      }
+    }
   } catch (error) {
     if (error.name === 'ValidationError') return;
-    ElMessage.error('岗位发布失败');
-    console.error('岗位发布失败:', error);
+    ElMessage.error('操作失败：' + (error.response?.data?.message || error.message));
+    console.error('操作失败:', error);
   } finally {
     loading.value = false;
   }
@@ -158,7 +244,7 @@ const handleReset = () => {
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <h2>发布岗位</h2>
+          <h2>{{ pageTitle }}</h2>
         </div>
       </template>
 
@@ -332,7 +418,7 @@ const handleReset = () => {
 
         <!-- 提交按钮 -->
         <el-form-item>
-          <el-button type="primary" @click="handleSubmit">发布岗位</el-button>
+          <el-button type="primary" @click="submitForm">发布岗位</el-button>
           <el-button @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>

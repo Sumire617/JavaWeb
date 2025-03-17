@@ -131,7 +131,12 @@ const editUser = async (userId) => {
             <label for="email">邮箱:</label>
             <input type="email" id="email" value="${user.email}" style="width: 100%; margin-bottom: 10px;">
             <label for="phoneNumber">手机号:</label>
-            <input type="text" id="phoneNumber" value="${user.phoneNumber}" style="width: 100%;">
+            <input type="text" id="phoneNumber" value="${user.phoneNumber}" style="width: 100%; margin-bottom: 10px;">
+            <label for="userStatus">用户状态:</label>
+            <select id="userStatus" style="width: 100%;">
+              <option value="正常" ${user.userStatus === '正常' ? 'selected' : ''}>正常</option>
+              <option value="冻结" ${user.userStatus === '冻结' ? 'selected' : ''}>冻结</option>
+            </select>
           </form>
         </div>
       `,
@@ -140,20 +145,22 @@ const editUser = async (userId) => {
 			showCancelButton: true,
 			dangerouslyUseHTMLString: true,
 			beforeClose: async (action, instance, done) => {
-				// 当用户点击“确定”时，收集表单数据并发起 PATCH 请求
+				// 当用户点击"确定"时，收集表单数据并发起 PATCH 请求
 				if (action === 'confirm') {
 					const usernameEl = document.getElementById('username');
 					const passwordEl = document.getElementById('password');
 					const emailEl = document.getElementById('email');
 					const phoneNumberEl = document.getElementById('phoneNumber');
+					const userStatusEl = document.getElementById('userStatus');
 					const now = new Date().toISOString();
-					if (usernameEl && passwordEl && emailEl && phoneNumberEl) {
+					if (usernameEl && passwordEl && emailEl && phoneNumberEl && userStatusEl) {
 						// 收集更新后的数据，注意不要与外层变量重名
 						const updatedFormData = {
 							username: usernameEl.value,
 							password: passwordEl.value,
 							email: emailEl.value,
 							phoneNumber: phoneNumberEl.value,
+							userStatus: userStatusEl.value,
 							updatedAt: now
 						};
 

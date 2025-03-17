@@ -13,25 +13,14 @@ import java.time.LocalDateTime;
 public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "message_id", nullable = false, length = 36)
     private String messageId;
     
-    @Column(name = "sender_id", nullable = false, length = 36)
+    @Column(name = "sender_id", nullable = false)
     private String senderId;
     
-    @Column(name = "receiver_id", nullable = false, length = 36)
+    @Column(name = "receiver_id", nullable = false)
     private String receiverId;
     
-    @Column(name = "sender_type", nullable = false, length = 20)
-    private String senderType; // 发送者类型: 'USER', 'EMPLOYER'
-    
-    @Column(name = "job_post_id", length = 36)
-    private String jobPostId; // 相关岗位ID，可选
-    
-    @Column(name = "application_id", length = 36)
-    private String applicationId; // 相关申请ID，可选
-    
-    @Lob
     @Column(name = "content", nullable = false)
     private String content;
     
@@ -39,8 +28,17 @@ public class Message {
     private LocalDateTime sendTime;
     
     @Column(name = "read_status", nullable = false)
-    private boolean readStatus = false; // 默认未读
+    private boolean readStatus;
     
     @Column(name = "read_time")
     private LocalDateTime readTime;
+    
+    @Column(name = "sender_type", nullable = false)
+    private String senderType; // 发送者类型: 'USER', 'EMPLOYER'
+    
+    @Column(name = "job_post_id")
+    private String jobPostId; // 相关岗位ID，可选
+    
+    @Column(name = "application_id")
+    private String applicationId; // 相关申请ID，可选
 } 

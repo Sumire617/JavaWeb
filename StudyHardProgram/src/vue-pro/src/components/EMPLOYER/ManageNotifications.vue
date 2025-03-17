@@ -37,7 +37,7 @@ const priorityMap = {
 const fetchNotifications = async () => {
   try {
     loading.value = true;
-    const response = await axios.get('/api/employer/notifications', {
+    const response = await axios.get('/api/notifications/employer/notifications', {
       params: {
         page: pagination.value.currentPage - 1,
         size: pagination.value.pageSize,
@@ -74,7 +74,7 @@ const handleDelete = async (id) => {
       type: 'error'
     });
     
-    await axios.delete(`/api/employer/notifications/${id}`);
+    await axios.delete(`/api/notifications/employer/notifications/${id}`);
     ElMessage.success('通知已删除');
     fetchNotifications();
   } catch (error) {

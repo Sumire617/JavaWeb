@@ -1,5 +1,6 @@
 package org.sumire.studyhardprogram.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -7,6 +8,7 @@ import java.time.Instant;
 
 @Getter
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "job_posts")
 public class JobPost {
     @Id

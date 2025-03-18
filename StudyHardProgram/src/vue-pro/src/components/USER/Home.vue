@@ -52,18 +52,6 @@
 						</template>
 					</el-autocomplete>
 				</div>
-				<div class="hot-cities">
-					<span class="label">热门校区：</span>
-					<template v-for="city in hotCities" :key="city">
-						<el-tag
-							class="city-tag"
-							effect="plain"
-							@click="searchQuery = city; handleSearch()"
-						>
-							{{ city }}
-						</el-tag>
-					</template>
-				</div>
 			</div>
 		</div>
 
@@ -300,13 +288,9 @@ const jobCategories = ref([
 	{ id: 'admin', name: '行政助理' },
 	{ id: 'library', name: '图书馆' },
 	{ id: 'research', name: '科研助理' },
-	{ id: 'it', name: '信息技术' },
 	{ id: 'service', name: '校园服务' },
 	{ id: 'other', name: '其他' }
 ]);
-
-// 热门校区
-const hotCities = ['本部校区', '医学部', '工学部', '信息学部', '新校区', '附属医院', '科技园', '创新园'];
 
 // 获取可用的工作类型
 const fetchJobTypes = async () => {
@@ -321,6 +305,7 @@ const fetchJobTypes = async () => {
 			
 			// 添加从API获取的类型
 			response.data.forEach(type => {
+				// 将中文类型作为id和name使用
 				typesList.push({ id: type, name: type });
 			});
 			

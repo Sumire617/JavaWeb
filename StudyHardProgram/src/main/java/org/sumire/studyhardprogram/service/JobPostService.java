@@ -41,4 +41,24 @@ public interface JobPostService {
      * @return 待审核岗位分页列表
      */
     Page<JobPost> findPendingJobs(Pageable pageable);
+    
+    /**
+     * 获取所有可用的工作类型
+     * @return 工作类型列表
+     */
+    List<String> getAllJobTypes();
+    
+    /**
+     * 统计各工作类型的岗位数量
+     * @return 工作类型和对应的岗位数量
+     */
+    Map<String, Long> countJobsByType();
+    
+    /**
+     * 获取搜索建议
+     * @param keyword 关键词
+     * @param limit 限制返回数量
+     * @return 搜索建议列表
+     */
+    List<String> getSearchSuggestions(String keyword, int limit);
 }

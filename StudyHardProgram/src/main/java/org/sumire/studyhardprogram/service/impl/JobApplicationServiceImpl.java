@@ -75,7 +75,22 @@ public class JobApplicationServiceImpl implements JobApplicationService {
 
     @Override
     public Page<JobApplication> getApplicationsByUserId(String userId, Pageable pageable) {
-        return jobApplicationRepository.findByUser_UserId(userId, pageable);
+        try {
+            System.out.println("Service - Getting applications for user: " + userId);
+            
+            // 验证用户是否存在
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("用户不存在，ID: " + userId));
+            
+            Page<JobApplication> applications = jobApplicationRepository.findByUser_UserId(userId, pageable);
+            System.out.println("Service - Found " + applications.getTotalElements() + " applications");
+            
+            return applications;
+        } catch (Exception e) {
+            System.err.println("Service - Error getting applications for user " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("获取用户申请列表失败: " + e.getMessage(), e);
+        }
     }
 
     @Override

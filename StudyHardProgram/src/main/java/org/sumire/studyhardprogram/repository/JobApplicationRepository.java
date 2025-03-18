@@ -13,7 +13,9 @@ import java.util.Optional;
 @Repository
 public interface JobApplicationRepository extends JpaRepository<JobApplication, String> {
     Page<JobApplication> findByJobPost_JobPostId(String jobPostId, Pageable pageable);
-    Page<JobApplication> findByUser_UserId(String userId, Pageable pageable);
+    
+    @Query("SELECT a FROM JobApplication a WHERE a.user.userId = :userId")
+    Page<JobApplication> findByUser_UserId(@Param("userId") String userId, Pageable pageable);
     
     @Query("SELECT COUNT(a) > 0 FROM JobApplication a WHERE a.jobPost.jobPostId = :jobPostId AND a.user.userId = :userId AND a.status = :status")
     boolean existsByJobPostAndUserAndStatus(@Param("jobPostId") String jobPostId, 

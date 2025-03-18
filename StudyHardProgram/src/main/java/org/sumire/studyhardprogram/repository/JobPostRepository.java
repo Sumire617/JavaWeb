@@ -57,4 +57,50 @@ public interface JobPostRepository extends JpaRepository<JobPost, String>, JpaSp
      */
     @Query("SELECT j.location, COUNT(j) FROM JobPost j WHERE j.status = 'APPROVED' GROUP BY j.location ORDER BY COUNT(j) DESC")
     List<Object[]> countJobsByLocation();
+
+    /**
+     * 统计各工作类型的岗位数量
+     * @return 各工作类型的岗位数量
+     */
+    @Query("SELECT j.jobType, COUNT(j) FROM JobPost j WHERE j.status = 'APPROVED' GROUP BY j.jobType ORDER BY COUNT(j) DESC")
+    List<Object[]> countJobsByType();
+
+    /**
+     * 获取所有可用的工作类型
+     * @return 所有非空的工作类型列表
+     */
+    @Query("SELECT DISTINCT j.jobType FROM JobPost j WHERE j.jobType IS NOT NULL AND j.jobType <> '' AND j.status = 'APPROVED'")
+    List<String> findAllJobTypes();
+
+    /**
+     * 根据工作类型查找岗位
+     * @param jobType 工作类型
+     * @param pageable 分页参数
+     * @return 指定工作类型的岗位
+     */
+    Page<JobPost> findByJobTypeAndStatus(String jobType, String status, Pageable pageable);
+
+    /**
+     * 根据关键词获取搜索建议
+     * @param keyword 用户输入的关键词
+     * @return 匹配的职位标题、位置和要求列表
+     */
+    @Query("SELECT DISTINCT j.jobTitle FROM JobPost j WHERE j.status = 'APPROVED' AND LOWER(j.jobTitle) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY j.jobTitle")
+    List<String> findJobTitleSuggestions(@Param("keyword") String keyword);
+
+    /**
+     * 根据关键词获取位置建议
+     * @param keyword 用户输入的关键词
+     * @return 匹配的位置列表
+     */
+    @Query("SELECT DISTINCT j.location FROM JobPost j WHERE j.status = 'APPROVED' AND LOWER(j.location) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY j.location")
+    List<String> findLocationSuggestions(@Param("keyword") String keyword);
+
+    /**
+     * 根据关键词获取工作类型建议
+     * @param keyword 用户输入的关键词
+     * @return 匹配的工作类型列表
+     */
+    @Query("SELECT DISTINCT j.jobType FROM JobPost j WHERE j.status = 'APPROVED' AND j.jobType IS NOT NULL AND LOWER(j.jobType) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY j.jobType")
+    List<String> findJobTypeSuggestions(@Param("keyword") String keyword);
 }

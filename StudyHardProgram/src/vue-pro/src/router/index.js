@@ -11,12 +11,16 @@ import Home from "@/components/USER/Home.vue";
 import Interface from "@/components/EMPLOYER/Interface.vue";
 import JobAudit from "@/components/ADMIN/JobModule/JobAudit.vue";
 import Job from "@/components/ADMIN/JobModule/Job.vue";
+import Profile from "@/components/USER/Profile.vue";
+import Applications from "@/components/USER/Applications.vue";
 
 const routes = [
   { path: '/', component: LoginView },
   { path: '/register', component: RegisterView },
   { path: '/Home', component: Home },
   { path: '/job/:id', component: () => import('@/components/USER/JobDetail.vue') },
+  { path: '/profile', component: Profile },
+  { path: '/applications', component: Applications },
   { path: '/recruiting-interface', component: Interface },
   {
     path: '/dashboard',

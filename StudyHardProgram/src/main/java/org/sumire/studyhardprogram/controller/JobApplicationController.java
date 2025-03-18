@@ -56,10 +56,25 @@ public class JobApplicationController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<Page<JobApplication>> getApplicationsByUserId(
+    public ResponseEntity<?> getApplicationsByUserId(
             @PathVariable String userId,
             Pageable pageable) {
-        return ResponseEntity.ok(jobApplicationService.getApplicationsByUserId(userId, pageable));
+        try {
+            System.out.println("Getting applications for user: " + userId);
+            System.out.println("Pageable: " + pageable);
+            
+            Page<JobApplication> applications = jobApplicationService.getApplicationsByUserId(userId, pageable);
+            
+            System.out.println("Found " + applications.getTotalElements() + " applications");
+            return ResponseEntity.ok(applications);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Error getting applications for user " + userId + ": " + e.getMessage());
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("error", "获取申请列表失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     @GetMapping("/jobs/{jobPostId}/apply")

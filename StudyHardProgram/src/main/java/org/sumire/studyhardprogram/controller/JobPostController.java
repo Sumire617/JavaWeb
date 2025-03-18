@@ -11,6 +11,7 @@ import org.sumire.studyhardprogram.service.JobPostService;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -95,15 +96,38 @@ public class JobPostController {
      * 获取已审核的公开工作列表
      * @param page 页码，从0开始
      * @param size 每页大小
+     * @param category 分类
+     * @param search 搜索关键字
      * @return 已审核的工作分页列表
      */
     @GetMapping("/public")
     public ResponseEntity<Page<JobPost>> getPublicJobs(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String search
     ) {
+        System.out.println("获取公开岗位列表，分类: " + category + ", 搜索关键词: " + search);
+        
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by("postedAt").descending());
-        Page<JobPost> publicJobs = jobPostService.findJobs(null, null, null, "APPROVED", pageRequest);
+        
+        // 将category当作jobType处理，search当作关键字处理
+        Page<JobPost> publicJobs;
+        if (category != null && !category.equals("all")) {
+            System.out.println("按分类筛选岗位: " + category);
+            publicJobs = jobPostService.findJobs(search, null, category, "APPROVED", pageRequest);
+        } else {
+            System.out.println("获取所有分类岗位");
+            publicJobs = jobPostService.findJobs(search, null, null, "APPROVED", pageRequest);
+        }
+        
+        System.out.println("查询结果: 总数: " + publicJobs.getTotalElements() + ", 当前页条数: " + publicJobs.getContent().size());
+        
+        // 打印每个岗位的类型
+        publicJobs.getContent().forEach(job -> {
+            System.out.println("岗位ID: " + job.getJobPostId() + ", 标题: " + job.getJobTitle() + ", 类型: " + job.getJobType());
+        });
+        
         return ResponseEntity.ok(publicJobs);
     }
     
@@ -136,5 +160,88 @@ public class JobPostController {
     public ResponseEntity<Void> employerDeleteJob(@PathVariable String jobId) {
         jobPostService.deleteJob(jobId);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 获取所有可用的工作类型
+     * @return 工作类型列表
+     */
+    @GetMapping("/types")
+    public ResponseEntity<List<String>> getAllJobTypes() {
+        List<String> jobTypes = jobPostService.getAllJobTypes();
+        return ResponseEntity.ok(jobTypes);
+    }
+
+    /**
+     * 统计各工作类型的岗位数量
+     * @return 各工作类型的岗位数量
+     */
+    @GetMapping("/types/stats")
+    public ResponseEntity<Map<String, Long>> getJobTypeStats() {
+        Map<String, Long> stats = jobPostService.countJobsByType();
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * 初始化工作类型数据
+     * 对所有没有工作类型的岗位，根据标题或描述设置默认工作类型
+     * @return 更新结果
+     */
+    @GetMapping("/init-job-types")
+    public ResponseEntity<Map<String, Object>> initJobTypes() {
+        List<JobPost> allJobs = jobPostService.getAllJobPosts();
+        int updatedCount = 0;
+        
+        for (JobPost job : allJobs) {
+            if (job.getJobType() == null || job.getJobType().isEmpty()) {
+                String jobTitle = job.getJobTitle().toLowerCase();
+                String jobType = "其他"; // 默认类型
+                
+                // 根据标题关键词判断类型
+                if (jobTitle.contains("助教") || jobTitle.contains("辅导")) {
+                    jobType = "助教辅导";
+                } else if (jobTitle.contains("行政") || jobTitle.contains("助理")) {
+                    jobType = "行政助理";
+                } else if (jobTitle.contains("图书馆")) {
+                    jobType = "图书馆";
+                } else if (jobTitle.contains("研究") || jobTitle.contains("科研")) {
+                    jobType = "科研助理";
+                } else if (jobTitle.contains("it") || jobTitle.contains("信息") || jobTitle.contains("技术")) {
+                    jobType = "信息技术";
+                } else if (jobTitle.contains("服务") || jobTitle.contains("物业") || jobTitle.contains("餐厅")) {
+                    jobType = "校园服务";
+                } else if (jobTitle.contains("校内") || jobTitle.contains("校园")) {
+                    jobType = "校内岗位";
+                }
+                
+                // 更新工作类型
+                job.setJobType(jobType);
+                jobPostService.saveJobPost(job);
+                updatedCount++;
+            }
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalJobs", allJobs.size());
+        result.put("updatedJobs", updatedCount);
+        result.put("jobTypes", jobPostService.getAllJobTypes());
+        
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 获取搜索建议
+     * @param keyword 用户输入的关键词
+     * @param limit 最大返回结果数量
+     * @return 搜索建议列表
+     */
+    @GetMapping("/suggestions")
+    public ResponseEntity<List<String>> getSearchSuggestions(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        System.out.println("获取搜索建议，关键词: " + keyword);
+        List<String> suggestions = jobPostService.getSearchSuggestions(keyword, limit);
+        return ResponseEntity.ok(suggestions);
     }
 }

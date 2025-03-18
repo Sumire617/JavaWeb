@@ -1,23 +1,56 @@
 <template>
 	<div class="home-container">
+		<!-- 顶部导航栏 -->
+		<el-header class="header">
+			<div class="header-left">
+
+			</div>
+			<div class="header-right">
+				<el-dropdown @command="handleCommand">
+					<span class="user-info">
+						<el-avatar :size="32" :src="userAvatar">
+							{{ userInitials }}
+						</el-avatar>
+						<span class="username">{{ userName }}</span>
+						<el-icon class="el-icon--right"><arrow-down /></el-icon>
+					</span>
+					<template #dropdown>
+						<el-dropdown-menu>
+							<el-dropdown-item command="profile">个人信息</el-dropdown-item>
+							<el-dropdown-item command="applications">我的申请</el-dropdown-item>
+							<el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+						</el-dropdown-menu>
+					</template>
+				</el-dropdown>
+			</div>
+		</el-header>
+
 		<!-- 顶部搜索区域 -->
 		<div class="search-section">
 			<div class="search-content">
 				<h1>校园勤工俭学</h1>
 				<p class="subtitle">为同学们提供优质的校内外兼职机会</p>
 				<div class="search-box">
-					<el-input
+					<el-autocomplete
 						v-model="searchQuery"
-						placeholder="搜索职位、公司或关键词"
+						:fetch-suggestions="querySearchAsync"
+						placeholder="搜索职位、地点或关键词"
 						class="search-input"
+						clearable
+						@select="handleSelect"
 						@keyup.enter="handleSearch"
 					>
-						<template #append>
+						<template #suffix>
 							<el-button type="primary" @click="handleSearch">
 								搜索
 							</el-button>
 						</template>
-					</el-input>
+						<template #default="{ item }">
+							<div class="suggestion-item">
+								{{ item.value }}
+							</div>
+						</template>
+					</el-autocomplete>
 				</div>
 				<div class="hot-cities">
 					<span class="label">热门校区：</span>
@@ -84,8 +117,8 @@
 									<span class="review-count">({{ job.reviewCount || 0 }}条评价)</span>
 								</div>
 								<div class="job-tags">
-									<el-tag size="small" type="success">{{ job.jobType }}</el-tag>
-									<el-tag size="small" type="warning">{{ job.requirements }}</el-tag>
+									<el-tag size="small" type="success" class="job-type-tag">{{ job.jobType || '其他' }}</el-tag>
+									<el-tag size="small" type="warning" v-if="job.requirements">{{ job.requirements }}</el-tag>
 								</div>
 							</div>
 							<div class="job-footer">
@@ -150,12 +183,101 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
+import { ArrowDown } from '@element-plus/icons-vue';
 
 const router = useRouter();
+const user = ref(null);
+
+// 用户信息计算属性
+const userName = computed(() => {
+	return user.value?.name;
+});
+
+const userAvatar = computed(() => {
+	return user.value?.avatar || '';
+});
+
+const userInitials = computed(() => {
+	if (!user.value?.name) return '未';
+	return user.value.name.charAt(0);
+});
+
+// 处理下拉菜单命令
+const handleCommand = async (command) => {
+	switch (command) {
+		case 'profile':
+			router.push('/profile');
+			break;
+		case 'applications':
+			router.push('/applications');
+			break;
+		case 'logout':
+			try {
+				await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+					confirmButtonText: '确定',
+					cancelButtonText: '取消',
+					type: 'warning'
+				});
+				localStorage.removeItem('user');
+				router.push('/');
+			} catch {
+				// 用户取消退出
+			}
+			break;
+	}
+};
+
+// 获取用户信息
+const fetchUserInfo = async () => {
+	try {
+		const userStr = localStorage.getItem('user');
+		if (!userStr) {
+			ElMessage.error('请先登录');
+			router.push('/');
+			return;
+		}
+		
+		// 先使用本地存储的用户信息
+		try {
+			const userData = JSON.parse(userStr);
+			console.log('本地存储的用户信息:', userData);
+			
+			// 设置基本用户信息
+			user.value = userData;
+			
+			// 从后端获取最新信息
+			try {
+				console.log('尝试获取最新用户信息，用户ID:', userData.userId);
+				const response = await axios.get(`/api/users/id=${userData.userId}`);
+				console.log('从后端获取的用户信息:', response.data);
+				
+				if (response.data) {
+					// 合并本地和后端数据，优先使用后端数据
+					user.value = { ...userData, ...response.data };
+					// 更新本地存储
+					localStorage.setItem('user', JSON.stringify(user.value));
+				}
+			} catch (apiError) {
+				console.warn('从后端获取用户信息失败，使用本地存储的信息:', apiError);
+				// 继续使用本地数据，不中断用户体验
+			}
+		} catch (parseError) {
+			console.error('解析本地用户信息失败:', parseError);
+			localStorage.removeItem('user');
+			router.push('/');
+			return;
+		}
+	} catch (error) {
+		console.error('获取用户信息完全失败:', error);
+		ElMessage.error('获取用户信息失败，请重新登录');
+		localStorage.removeItem('user');
+		router.push('/');
+	}
+};
 
 // 岗位列表数据
 const jobList = ref([]);
@@ -171,7 +293,7 @@ const pagination = ref({
 });
 
 // 职位分类
-const jobCategories = [
+const jobCategories = ref([
 	{ id: 'all', name: '全部' },
 	{ id: 'campus', name: '校内岗位' },
 	{ id: 'teaching', name: '助教辅导' },
@@ -181,15 +303,44 @@ const jobCategories = [
 	{ id: 'it', name: '信息技术' },
 	{ id: 'service', name: '校园服务' },
 	{ id: 'other', name: '其他' }
-];
+]);
 
 // 热门校区
 const hotCities = ['本部校区', '医学部', '工学部', '信息学部', '新校区', '附属医院', '科技园', '创新园'];
+
+// 获取可用的工作类型
+const fetchJobTypes = async () => {
+	try {
+		const response = await axios.get('/api/jobs/types');
+		console.log('获取到工作类型:', response.data);
+		
+		// 如果API返回了类型列表，用它替换默认值
+		if (response.data && response.data.length > 0) {
+			// 添加"全部"选项
+			const typesList = [{ id: 'all', name: '全部' }];
+			
+			// 添加从API获取的类型
+			response.data.forEach(type => {
+				typesList.push({ id: type, name: type });
+			});
+			
+			jobCategories.value = typesList;
+			console.log('更新后的分类列表:', jobCategories.value);
+		} else {
+			console.warn('API没有返回工作类型数据，使用默认分类');
+		}
+	} catch (error) {
+		console.error('获取工作类型失败:', error);
+		// 保留默认类型
+	}
+};
 
 // 获取岗位列表
 const fetchJobs = async () => {
 	loading.value = true;
 	try {
+		console.log('获取岗位列表, 分类:', activeCategory.value, '搜索:', searchQuery.value);
+		
 		const response = await axios.get('/api/jobs/public', {
 			params: {
 				page: pagination.value.currentPage - 1,
@@ -198,10 +349,27 @@ const fetchJobs = async () => {
 				search: searchQuery.value || null
 			}
 		});
-		jobList.value = response.data.content;
-		pagination.value.total = response.data.totalElements;
+		
+		console.log('获取到岗位列表:', response.data);
+		
+		if (response.data.content) {
+			jobList.value = response.data.content;
+			pagination.value.total = response.data.totalElements;
+		} else {
+			jobList.value = [];
+			pagination.value.total = 0;
+			console.warn('返回的数据格式不符合预期:', response.data);
+		}
 	} catch (error) {
 		console.error('获取岗位列表失败:', error);
+		jobList.value = [];
+		pagination.value.total = 0;
+		
+		if (error.response) {
+			ElMessage.error(`获取岗位列表失败: ${error.response.data?.message || '服务器错误'}`);
+		} else {
+			ElMessage.error('获取岗位列表失败，请检查网络连接');
+		}
 	} finally {
 		loading.value = false;
 	}
@@ -215,6 +383,7 @@ const handleSearch = () => {
 
 // 分类切换
 const handleCategoryChange = (category) => {
+	console.log('分类切换为:', category);
 	activeCategory.value = category;
 	pagination.value.currentPage = 1;
 	fetchJobs();
@@ -328,7 +497,40 @@ const formatDateTime = (dateTime) => {
 	});
 };
 
+// 搜索建议函数
+const querySearchAsync = (queryString, callback) => {
+	if (queryString.length < 1) {
+		callback([]);
+		return;
+	}
+	
+	axios.get('/api/jobs/suggestions', {
+		params: {
+			keyword: queryString,
+			limit: 10
+		}
+	})
+	.then(response => {
+		const suggestions = response.data.map(item => ({
+			value: item
+		}));
+		callback(suggestions);
+	})
+	.catch(error => {
+		console.error('获取搜索建议失败:', error);
+		callback([]);
+	});
+};
+
+// 选择建议项
+const handleSelect = (item) => {
+	searchQuery.value = item.value;
+	handleSearch();
+};
+
 onMounted(() => {
+	fetchUserInfo();
+	fetchJobTypes();
 	fetchJobs();
 });
 </script>
@@ -337,6 +539,51 @@ onMounted(() => {
 .home-container {
 	width: 100%;
 	background-color: #f5f7fa;
+}
+
+.header {
+	background-color: white;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0 20px;
+	height: 60px;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 1000;
+}
+
+.header-left h2 {
+	margin: 0;
+	color: #303133;
+	font-size: 1.5em;
+}
+
+.header-right {
+	display: flex;
+	align-items: center;
+}
+
+.user-info {
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	padding: 5px 10px;
+	border-radius: 4px;
+	transition: background-color 0.3s;
+}
+
+.user-info:hover {
+	background-color: #f5f7fa;
+}
+
+.username {
+	margin: 0 8px;
+	color: #606266;
+	font-size: 14px;
 }
 
 .search-section {
@@ -387,14 +634,37 @@ onMounted(() => {
 	max-width: 1400px;
 	margin: 0 auto;
 	padding: 20px;
+	margin-top: 80px;
 }
 
 .categories-section {
-	margin-bottom: 30px;
-	background: white;
-	padding: 20px;
+	background-color: white;
+	padding: 15px 20px;
 	border-radius: 8px;
-	box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+	box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+	margin-bottom: 20px;
+}
+
+.el-tabs :deep(.el-tabs__nav) {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.el-tabs :deep(.el-tabs__item) {
+	flex: 0 0 auto;
+	margin: 5px 10px 5px 0;
+	font-size: 15px;
+	transition: all 0.3s;
+}
+
+.el-tabs :deep(.el-tabs__item.is-active) {
+	font-weight: 600;
+	transform: scale(1.05);
+}
+
+.el-tabs :deep(.el-tabs__active-bar) {
+	background-color: #409eff;
+	height: 3px;
 }
 
 .job-col {
@@ -471,11 +741,16 @@ onMounted(() => {
 }
 
 .job-tags {
-	margin-top: 8px;
+	margin-top: 10px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
 }
 
-.job-tags .el-tag {
-	margin-right: 5px;
+.job-type-tag {
+	font-weight: 500;
+	background-color: #f0f9eb !important;
+	border-color: #e1f3d8 !important;
 }
 
 .job-footer {
@@ -528,5 +803,22 @@ onMounted(() => {
 	.job-card {
 		margin-bottom: 15px;
 	}
+}
+
+/* 添加自动完成样式 */
+.suggestion-item {
+	padding: 5px 0;
+}
+
+.search-input {
+	width: 100%;
+}
+
+.search-input :deep(.el-input__suffix) {
+	right: 0;
+}
+
+.search-input :deep(.el-input__inner) {
+	padding-right: 80px;
 }
 </style>

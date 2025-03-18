@@ -32,6 +32,9 @@ public class JobPost {
     @Column(name = "location")
     private String location;
 
+    @Column(name = "job_type")
+    private String jobType;
+
     @Column(name = "status")
     private String status;
 
@@ -67,6 +70,10 @@ public class JobPost {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public void setJobType(String jobType) {
+        this.jobType = jobType;
     }
 
     public void setStatus(String status) {

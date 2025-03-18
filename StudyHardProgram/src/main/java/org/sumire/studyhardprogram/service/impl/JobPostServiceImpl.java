@@ -14,9 +14,13 @@ import jakarta.persistence.criteria.Predicate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class JobPostServiceImpl implements JobPostService {
@@ -56,6 +60,16 @@ public class JobPostServiceImpl implements JobPostService {
 
     @Override
     public Page<JobPost> findJobs(String keyword, String location, String jobType, String status, Pageable pageable) {
+        System.out.println("JobPostService - findJobs - 参数: keyword=" + keyword + ", location=" + location 
+                + ", jobType=" + jobType + ", status=" + status);
+        
+        // 如果只需要按工作类型和状态筛选，使用专用方法
+        if (jobType != null && !jobType.isEmpty() && keyword == null && location == null) {
+            System.out.println("JobPostService - 使用findByJobTypeAndStatus方法");
+            return jobPostRepository.findByJobTypeAndStatus(jobType, status, pageable);
+        }
+        
+        // 更复杂的查询使用Specification
         Specification<JobPost> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             
@@ -72,6 +86,7 @@ public class JobPostServiceImpl implements JobPostService {
             }
             
             if (jobType != null && !jobType.isEmpty()) {
+                System.out.println("JobPostService - 添加jobType筛选条件: " + jobType);
                 predicates.add(cb.equal(root.get("jobType"), jobType));
             }
 
@@ -79,10 +94,13 @@ public class JobPostServiceImpl implements JobPostService {
                 predicates.add(cb.equal(root.get("status"), status));
             }
             
+            System.out.println("JobPostService - 构建了 " + predicates.size() + " 个筛选条件");
             return cb.and(predicates.toArray(new Predicate[0]));
         };
         
-        return jobPostRepository.findAll(spec, pageable);
+        Page<JobPost> result = jobPostRepository.findAll(spec, pageable);
+        System.out.println("JobPostService - 查询结果: 总数=" + result.getTotalElements());
+        return result;
     }
 
     @Override
@@ -110,6 +128,11 @@ public class JobPostServiceImpl implements JobPostService {
     @Override
     public JobPost createJob(JobPost jobPost) {
         jobPost.setStatus("PENDING");
+        
+        if (jobPost.getJobType() == null || jobPost.getJobType().isEmpty()) {
+            jobPost.setJobType("其他");
+        }
+        
         return jobPostRepository.save(jobPost);
     }
 
@@ -122,6 +145,14 @@ public class JobPostServiceImpl implements JobPostService {
         existingJob.setRequirements(jobPost.getRequirements());
         existingJob.setSalaryRange(jobPost.getSalaryRange());
         existingJob.setLocation(jobPost.getLocation());
+        
+        String jobType = jobPost.getJobType();
+        if (jobType != null && !jobType.isEmpty()) {
+            existingJob.setJobType(jobType);
+        } else if (existingJob.getJobType() == null || existingJob.getJobType().isEmpty()) {
+            existingJob.setJobType("其他");
+        }
+        
         existingJob.setStatus(jobPost.getStatus());
         existingJob.setUpdatedAt(java.time.Instant.now());
         return jobPostRepository.save(existingJob);
@@ -135,5 +166,52 @@ public class JobPostServiceImpl implements JobPostService {
     @Override
     public Page<JobPost> findPendingJobs(Pageable pageable) {
         return jobPostRepository.findByStatus("PENDING", pageable);
+    }
+
+    @Override
+    public List<String> getAllJobTypes() {
+        return jobPostRepository.findAllJobTypes();
+    }
+
+    @Override
+    public Map<String, Long> countJobsByType() {
+        List<Object[]> results = jobPostRepository.countJobsByType();
+        Map<String, Long> jobTypeCount = new HashMap<>();
+        
+        for (Object[] result : results) {
+            String jobType = (String) result[0];
+            if (jobType == null || jobType.isEmpty()) {
+                jobType = "其他";
+            }
+            Long count = ((Number) result[1]).longValue();
+            jobTypeCount.put(jobType, count);
+        }
+        
+        return jobTypeCount;
+    }
+
+    @Override
+    public List<String> getSearchSuggestions(String keyword, int limit) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        keyword = keyword.trim();
+        
+        // 获取各种类型的建议
+        List<String> titleSuggestions = jobPostRepository.findJobTitleSuggestions(keyword);
+        List<String> locationSuggestions = jobPostRepository.findLocationSuggestions(keyword);
+        List<String> typeSuggestions = jobPostRepository.findJobTypeSuggestions(keyword);
+        
+        // 合并所有建议
+        Set<String> uniqueSuggestions = new LinkedHashSet<>();
+        uniqueSuggestions.addAll(titleSuggestions);
+        uniqueSuggestions.addAll(locationSuggestions);
+        uniqueSuggestions.addAll(typeSuggestions);
+        
+        // 转换为List并限制数量
+        return uniqueSuggestions.stream()
+                .limit(limit)
+                .collect(Collectors.toList());
     }
 } 
